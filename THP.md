@@ -311,6 +311,8 @@ The tshark arguments are explained here:
 
 > gzinflate()
 
+> $_POST['password'])
+
 **JPEG PHP Exif**
 [exiftool(-k)](http://www.sno.phy.queensu.ca/~phil/exiftool/)
 ```
@@ -423,12 +425,16 @@ Order by [Total Hits] Desc
 ```
 
 [Loki](https://github.com/loki-project/loki)
-> MD5/SHA1/SHA256 hashes
-> Yara rules
-> Hard/soft filenames based on regular expressions
+> MD5/SHA1/SHA256 hashes\
+> Yara rules\
+> Hard/soft filenames based on regular expressions\
+
+> loki -p c:\inetpub\wwwroot\test
 
 [NeoPI](https://github.com/Neohapsis/NeoPI)
 > Python script - detect obfuscated/encrypted content
+
+> python neopi.py "C:\inetpub\wwwroot" -a -A
 
 [BackdoorMan](https://github.com/cys3c/BackdoorMan)
 > Python script - Detect malicious code in **PHP** scripts
@@ -493,41 +499,7 @@ Order by [Total Hits] Desc
 
 **Detection Tools**
 
-*PE Capture*
-[PE Capture Service](http://www.novirusthanks.org/products/pe-capture-service/)
 
-[NoVirusThanks](http://www.novirusthanks.org/products/pe-capture/)
-
-[ProcScan](https://github.com/abhisek/RandomCode/tree/master/Malware/Process)
-> Ruby script - x86-only memory analysis
-
-[Meterpeter Payload Detection](https://github.com/DamonMohammadbagher/Meterpreter_Payload_Detection)
-> Memory anaylsis for Meterpreter sessions
-
-*Reflective Injection Detection*
-
-[Reflective Injection Detection](https://github.com/papadp/reflective-injection-detection)
-
-[PowershellArsenal](https://github.com/mattifestation/PowerShellArsenal)
-
-*NTQueryInformationThread Detection*
-
-[Get-InjectedThread.ps1](https://gist.github.com/jaredcatkinson/23905d34537ce4b5b1818c3e6405c1d2)
-
-*Hash Fuzzing*
-[SSDeep](https://github.com/ssdeep-project/ssdeep)
-
-*Port Hashing*
-[imphash](https://github.com/Neo23x0/ImpHash-Generator) - Generate PE 
-
-*Execution Tracing*
-[ShimCacheParser](https://github.com/mandiant/ShimCacheParser)
-
-[AppCompatProcessor](https://github.com/mbevilacqua/appcompatprocessor)
-
-**Memory Analysis**
-- [Mandiant's Redline](https://www.fireeye.com/services/freeware/redline.html)
-- [Volatility](https://github.com/volatilityfoundation/volatility): [Wiki](https://github.com/volatilityfoundation/volatility/wiki/Volatility-Usage), [Windows Analysis](https://github.com/volatilityfoundation/volatility/wiki/Command-Reference-Mal) and [Memory Samples](https://github.com/volatilityfoundation/volatility/wiki/Memory-Samples)
 
 ## Powershell Tools
 [Kansa](https://github.com/davehull/Kansa)
