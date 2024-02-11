@@ -1061,13 +1061,13 @@ True
 ### Detection
 
 > **ProcessHacker**
-    > - On General Tab:
-    >   - Blank Process with no Image Filename, Directory and Commandline.
-    >   - Parent Process is Powershell
-    > - On Threads Tab:
-    >   - One entry, filename of the payload. On Modules Tab, using the filename, find and Check for the address.
-    > - On Threads Tab:
-    >   - One entry, filename of the payload. On Modules Tab, using the filename, find and Check for the address and dump in Memory Tab.
+- On General Tab:
+  - Blank Process with no Image Filename, Directory and Commandline.
+  - Parent Process is Powershell
+- On Threads Tab:
+  - One entry, filename of the payload. On Modules Tab, using the filename, find and Check for the address.
+- On Threads Tab:
+  - One entry, filename of the payload. On Modules Tab, using the filename, find and Check for the address and dump in Memory Tab.
 
 - [PEStudio](https://www.winitor.com/download) - Load the dumped file for Static Analysis.
 - [PE-SIEVE](https://github.com/hasherezade/pe-sieve) - Properly dump the payload.
