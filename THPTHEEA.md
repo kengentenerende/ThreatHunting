@@ -1019,19 +1019,19 @@ PS> PPID-Spoof -ppid 1944 -spawnTo "C:\Windows\System32\win32calc.exe" -dllPath 
 - [detect-ppid-spoof.py](https://github.com/WithSecureLabs/ppid-spoofing/blob/master/detect-ppid-spoof.py) 
 
 > **ProcessHacker**
-    > - On General Tab:
-    >   - Commandline: 0
-    >   - Suspicious "Current Directory" (location of the payload)
-    >   - Parent Process: Duplicated from the filename of the parent process.
-    > - On Threads Tab:
-    >   - Only has Stard Address of Duplicated Process.
-    > - On Handles Tab:
-    >   - 0x40 shows the location of current directory
-    >   - Spoofed Process has single Thread related to its filename.
-    > - On Modules Tab:
-    >   - Same with Process Injection, the payload can be traced in Modules Tab. Get the base adress.
-    > - On Memory Tab:
-    >   - Locate the payload using base adress on Modules Tab. Usually has WCX/RCX protection.
+- On General Tab:
+    - Commandline: 0
+   - Suspicious "Current Directory" (location of the payload)
+   - Parent Process: Duplicated from the filename of the parent process.
+- On Threads Tab:
+   - Only has Stard Address of Duplicated Process.
+- On Handles Tab:
+   - 0x40 shows the location of current directory
+   - Spoofed Process has single Thread related to its filename.
+- On Modules Tab:
+   - Same with Process Injection, the payload can be traced in Modules Tab. Get the base adress.
+- On Memory Tab:
+   - Locate the payload using base adress on Modules Tab. Usually has WCX/RCX protection.
 
 # Process Doppelganging
 
