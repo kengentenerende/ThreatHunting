@@ -13,7 +13,7 @@
 
 [Windows Internals, Sixth Edition, Part 2](https://www.microsoftpressstore.com/store/windows-internals-part-2-9780735665873)
 
-## Session Maneger (**smss.exe**)
+## Session Manager (**smss.exe**)
 - Session 0 starts csrss.exe and wininit.exe. (OS services)
 - Session 1 starts csrss.exe and winlogon.exe. (User session)
 - 1 instance (Session 0) within the process tree. The child instances of smss.exe which was used to create the other sessions, by copying itself into that new session, will self-terminate.
