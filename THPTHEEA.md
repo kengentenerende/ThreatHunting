@@ -403,6 +403,10 @@ Anything suspicious was executed?
 >volatility --profile=Win7SP1x86_23418 sockets -f file.dmp#Scanner for tcp socket objects
 
 # Volatily - Command Reference Malware (Win)
+
+[Volatility Labs](https://volatility-labs.blogspot.com/)
+
+Random suspicious strings
 > cat 4740.dmp.TXT | grep "powershell.exe" \
 cat 4740.dmp.TXT | grep "Invoke-"\
 cat 4740.dmp.TXT | grep ".hta"\
@@ -926,8 +930,16 @@ Table Name      Index Address    Symbol
 32bit            0xdc 0xe0fb4b9e HOOKED
 32bit           0x12d 0xe0fb4e32 HOOKED
 ```
+```
+root@attackdefense:~/memory_dump# 
+vol.py --profile=Linuxprofile-2_6_32-754_el6_x86_64x64 -f infection1.memory linux_check_syscall | grep "HOOKED"            
+Volatility Foundation Volatility Framework 2.6.1
+64bit         62                          0xffffffffa0523190 HOOKED: diamorphine/hacked_kill                             
+64bit         78                          0xffffffffa0523230 HOOKED: diamorphine/hacked_getdents                         
+64bit        217                          0xffffffffa0523420 HOOKED: diamorphine/hacked_getdents64
+```
 
-## linux_check_modules
+## linux_check_modules / linux_hidden_modules
 This plugin finds rootkits that break themselves from the module list but not sysfs. 
 
 We have never found a rootkit that actually removes itself from sysfs, so on a live system they are hidden from lsmod and */proc/modules*, but can still be found under */sys/modules*. We perform the same differnecing with the in-memory data structures.
@@ -938,9 +950,73 @@ Module Name
 -----------
 ipsecs_kbeast_v1
 ```
-
+```
+root@attackdefense:~/memory_dump# vol.py --profile=Linuxprofile-2_6_32-754_el6_x86_64x64 -f infection1.memory linux_check_modules                           
+Volatility Foundation Volatility Framework 2.6.1
+    Module Address       Core Address       Init Address Module Name             
+------------------ ------------------ ------------------ ------------------------
+0xffffffffa0523740 0xffffffffa0523000                0x0 diamorphine 
+```
 ## linux_check_creds
 The purpose of this plugin is to check if any processes are sharing 'cred' structures. In the beginning of the 2.6 kernel series, the user ID and group ID were just simple integers, so rootkits could elevate the privleges of userland processes by setting these to 0 (root). In later kernels, credentials are kept in a fairly complicated 'cred' structure. So now rootkits instead of allocating and setting their own 'cred' structure simply set a processes cred structure to be that of another root process that does not exit (usually init / pid 1). This plugin checks for any processes sharing 'cred' structures and reports them as the kernel would normally never do this. It finds a wide range of rootkits and rootkit activity and you can focus your investigation on elevated process (i.e. bash)
+
+## linux_check_inline_kernel
+- Check for inline kernel hooks
+
+Here's a brief interpretation of the output below:
+
+1. tcp4_seq_afinfo: This entry is related to TCP IPv4 sequence information. The "JMP" under Hook Type indicates a jump (hook) at address 0x0000000000000000, which could potentially be a sign of a hook in the code execution flow.
+
+2. udplite4_seq_afinfo: Similar to the first entry, but for UDP Lite IPv4 sequence information.
+
+3. udp4_seq_afinfo: Related to UDP IPv4 sequence information.
+
+4. TCP, UDP, UDP-Lite, PING, RAW: These entries show ioctl hooks for various network protocols. The "JMP" at address 0x0000000000000000 again suggests potential code redirection or modification.
+
+The presence of hooks in these network-related functions might indicate malicious activity or tampering with the networking functionality in the kernel. 
+```
+root@attackdefense:~/memory_dump# vol.py --profile=Linuxprofile-2_6_32-754_el6_x86_64x64 -f infection2.memory linux_check_inline_kernel
+Volatility Foundation Volatility Framework 2.6.1
+Name                                             Member           Hook Type Hook Address      
+------------------------------------------------ ---------------- --------- ------------------
+tcp4_seq_afinfo                                  show             JMP       0x0000000000000000
+udplite4_seq_afinfo                              show             JMP       0x0000000000000000
+udp4_seq_afinfo                                  show             JMP       0x0000000000000000
+TCP                                              ioctl            JMP       0x0000000000000000
+UDP                                              ioctl            JMP       0x0000000000000000
+UDP-Lite                                         ioctl            JMP       0x0000000000000000
+PING                                             ioctl            JMP       0x0000000000000000
+RAW                                              ioctl            JMP       0x0000000000000000
+```
+## volshell
+- This plugin presents an interactive shell in the linux memory image.
+- Get the module address in the Module.
+```
+root@attackdefense:~/memory_dump# vol.py --profile=Linuxprofile-2_6_32-754_el6_x86_64x64 -f infection1.memory linux_volshell     
+Volatility Foundation Volatility Framework 2.6.1
+Current context: process init, pid=1 DTB=0x137638000
+Welcome to volshell! Current memory image is:
+file:///root/memory_dump/infection1.memory
+To get help, type 'hh()'
+>>> db(0xffffffffa0523740, length=128)
+0xffffffffa0523740  00 00 00 00 00 00 00 00 00 01 10 00 00 00 ad de   ................
+0xffffffffa0523750  00 02 20 00 00 00 ad de 64 69 61 6d 6f 72 70 68   ........diamorph
+0xffffffffa0523760  69 6e 65 00 00 00 00 00 00 00 00 00 00 00 00 00   ine.............
+0xffffffffa0523770  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+0xffffffffa0523780  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+0xffffffffa0523790  e0 1f 3d a6 00 88 ff ff b8 7f 52 a0 ff ff ff ff   ..=.......R.....
+0xffffffffa05237a0  18 6f 51 a0 ff ff ff ff d8 9c 80 3d 01 88 ff ff   .oQ........=....
+0xffffffffa05237b0  c0 9c 80 3d 01 88 ff ff c0 74 ab 81 ff ff ff ff   ...=.....t......
+>>> db(0xffffffffa0523740, length=128)
+0xffffffffa0523740  00 00 00 00 00 00 00 00 00 01 10 00 00 00 ad de   ................
+0xffffffffa0523750  00 02 20 00 00 00 ad de 64 69 61 6d 6f 72 70 68   ........diamorph
+0xffffffffa0523760  69 6e 65 00 00 00 00 00 00 00 00 00 00 00 00 00   ine.............
+0xffffffffa0523770  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+0xffffffffa0523780  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+0xffffffffa0523790  e0 1f 3d a6 00 88 ff ff b8 7f 52 a0 ff ff ff ff   ..=.......R.....
+0xffffffffa05237a0  18 6f 51 a0 ff ff ff ff d8 9c 80 3d 01 88 ff ff   .oQ........=....
+0xffffffffa05237b0  c0 9c 80 3d 01 88 ff ff c0 74 ab 81 ff ff ff ff   ...=.....t......
+```
 
 # Hunting For Process Injection & Proactive API Monitoring
 
@@ -949,34 +1025,34 @@ The purpose of this plugin is to check if any processes are sharing 'cred' struc
 
 ### Detection
 
-> **Memdump**
+> **Memdump**\
     >- memhunter.exe -m 5
 
-> **ProcessHacker**
-    > - Check for suspcious binary loaded in "Modules" and get base address.
+> **ProcessHacker**\
+    > - Check for suspcious binary loaded in "Modules" and get base address.\
     > - Checl address in the "Memory" Tab. Usually it has PAGE_EXECUTE_WRITECOPY(WCX) or RCX protection.
 
 ## Process Hollowing
 > - minjector.exe -m 7 -s C:\Users\Administrator\Desktop\Tools\memhunter\mhookpayload.dll -t c:\windows\system32\notepad.exe
 ### Detection
-> **Memdump**
+> **Memdump**\
     > - memhunter.exe -m 4
 
-> **ProcessHacker**
-    > - 2 base address will be found in "Modules" related to the Process.
-    > - Check the mapped (lower) address in the "Memory".
+> **ProcessHacker**\
+    > - 2 base address will be found in "Modules" related to the Process.\
+    > - Check the mapped (lower) address in the "Memory".\
     > - Supicious "Current Directory" in General information.
 
 ## Reflective DLL Injection
 > - minjector.exe -m 5 -s C:\Users\Administrator\Desktop\Tools\memhunter\reflective_dll.x64.dll -t 5104
 
 ### Detection
->**Memdump**
+>**Memdump**\
     > - memhunter.exe -m 1
 
-> **ProcessHacker**
-    > - Check for *ntdll.dll!RtlUserThreadStart*.
-    > - Get the address without prefix in the buttom.
+> **ProcessHacker**\
+    > - Check for *ntdll.dll!RtlUserThreadStart*.\
+    > - Get the address without prefix in the buttom.\
     > - Check the payload around this address range.
 
 # Advanced Endpoint Hunting
@@ -1018,19 +1094,19 @@ PS> PPID-Spoof -ppid 1944 -spawnTo "C:\Windows\System32\win32calc.exe" -dllPath 
 ### Detection
 - [detect-ppid-spoof.py](https://github.com/WithSecureLabs/ppid-spoofing/blob/master/detect-ppid-spoof.py) 
 
-> **ProcessHacker**
-- On General Tab:
-    - Commandline: 0
-    - Suspicious "Current Directory" (location of the payload)
-    - Parent Process: Duplicated from the filename of the parent process.
-- On Threads Tab:
-    - Only has Stard Address of Duplicated Process.
-- On Handles Tab:
-    - 0x40 shows the location of current directory
-    - Spoofed Process has single Thread related to its filename.
-- On Modules Tab:
-    - Same with Process Injection, the payload can be traced in Modules Tab. Get the base adress.
-- On Memory Tab:
+> **ProcessHacker**\
+- On General Tab:\
+    - Commandline: 0\
+    - Suspicious "Current Directory" (location of the payload)\
+    - Parent Process: Duplicated from the filename of the parent process.\
+- On Threads Tab:\
+    - Only has Stard Address of Duplicated Process.\
+- On Handles Tab:\
+    - 0x40 shows the location of current directory\
+    - Spoofed Process has single Thread related to its filename.\
+- On Modules Tab:\
+    - Same with Process Injection, the payload can be traced in Modules Tab. Get the base adress.\
+- On Memory Tab:\
     - Locate the payload using base adress on Modules Tab. Usually has WCX/RCX protection.
 
 # Process Doppelganging
@@ -1066,8 +1142,6 @@ True
   - Parent Process is Powershell
 - On Threads Tab:
   - One entry, filename of the payload. On Modules Tab, using the filename, find and Check for the address.
-- On Threads Tab:
-  - One entry, filename of the payload. On Modules Tab, using the filename, find and Check for the address and dump in Memory Tab.
 
 - [PEStudio](https://www.winitor.com/download) - Load the dumped file for Static Analysis.
 - [PE-SIEVE](https://github.com/hasherezade/pe-sieve) - Properly dump the payload.
