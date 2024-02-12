@@ -411,6 +411,53 @@ Random suspicious strings
 cat 4740.dmp.TXT | grep "Invoke-"\
 cat 4740.dmp.TXT | grep ".hta"\
 cat 4740.dmp.TXT | grep "mshta"
+
+## yarascan
+- Volatility has several built-in scanning engines to help you find simple patterns like pool tags in physical or virtual address spaces. 
+- However, if you need to scan for more complex things like regular expressions or compound rules (i.e. search for "this" and not "that"), you can use the yarascan command. 
+- This plugin can help you locate any sequence of bytes (like assembly instructions with wild cards), regular expressions, ANSI strings, or Unicode strings in user mode or kernel memory.
+```
+root@attackdefense:~/memory_dump# vol.py --profile=Linuxprofile-2_6_32-754_el6_x86_64x64 -f infection1.memory linux_yarascan -Y "diamorphine"
+Volatility Foundation Volatility Framework 2.6.1
+Task: udevd pid 642 rule r1 addr 0x5558427f041c
+0x5558427f041c  64 69 61 6d 6f 72 70 68 69 6e 65 00 41 00 00 00   diamorphine.A...
+0x5558427f042c  00 00 00 00 30 ce 7f 42 58 55 00 00 a0 03 7f 42   ....0..BXU.....B
+0x5558427f043c  58 55 00 00 30 60 7e 42 58 55 00 00 f8 ff 7e 42   XU..0`~BXU....~B
+0x5558427f044c  58 55 00 00 70 04 7f 42 58 55 00 00 90 04 7f 42   XU..p..BXU.....B
+0x5558427f045c  58 55 00 00 40 00 00 00 00 00 00 00 20 00 00 00   XU..@...........
+0x5558427f046c  00 00 00 00 00 04 7f 42 58 55 00 00 78 c1 08 8b   .......BXU..x...
+0x5558427f047c  bc 7f 00 00 00 00 00 00 00 00 00 00 21 00 00 00   ............!...
+0x5558427f048c  00 00 00 00 c0 00 7f 42 58 55 00 00 4d 00 08 8b   .......BXU..M...
+0x5558427f049c  bc 7f 00 00 00 00 00 00 00 00 00 00 71 00 00 00   ............q...
+0x5558427f04ac  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+0x5558427f04bc  00 00 00 00 30 60 7e 42 58 55 00 00 30 69 81 42   ....0`~BXU..0i.B
+0x5558427f04cc  58 55 00 00 02 00 00 00 00 00 00 00 00 00 00 00   XU..............
+0x5558427f04dc  00 00 00 00 f8 09 00 00 00 00 00 00 74 02 7f 42   ............t..B
+0x5558427f04ec  58 55 00 00 0c 00 00 00 00 00 00 00 00 00 00 00   XU..............
+0x5558427f04fc  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+0x5558427f050c  00 00 00 00 00 00 00 00 00 00 00 00 c1 00 00 00   ................
+```
+```
+root@attackdefense:~/memory_dump# vol.py --profile=Linuxprofile-2_6_32-754_el6_x86_64x64 -f infection2.memory linux_yarascan -Y "reptile"
+Volatility Foundation Volatility Framework 2.6.1
+Task: udevd pid 642 rule r1 addr 0x5597259616c6
+0x5597259616c6  72 65 70 74 69 6c 65 00 53 55 42 53 59 53 54 45   reptile.SUBSYSTE
+0x5597259616d6  4d 3d 6d 6f 64 75 6c 65 00 53 45 51 4e 55 4d 3d   M=module.SEQNUM=
+0x5597259616e6  32 35 35 30 00 3d 76 63 73 36 00 53 45 51 4e 55   2550.=vcs6.SEQNU
+0x5597259616f6  4d 3d 32 35 34 37 00 4d 41 4a 4f 52 3d 37 00 4d   M=2547.MAJOR=7.M
+0x559725961706  49 4e 4f 52 3d 36 00 31 33 30 00 34 00 4d 49 4e   INOR=6.130.4.MIN
+0x559725961716  4f 52 3d 33 34 00 00 00 00 00 80 40 9e 25 97 55   OR=34......@.%.U
+0x559725961726  00 00 78 f1 4b 00 26 7f 00 00 00 00 00 00 00 00   ..x.K.&.........
+0x559725961736  00 00 00 00 00 00 00 00 00 00 10 1a 96 25 97 55   .............%.U
+0x559725961746  00 00 18 1a 96 25 97 55 00 00 00 00 00 00 00 00   .....%.U........
+0x559725961756  00 00 30 1a 96 25 97 55 00 00 00 00 00 00 00 00   ..0..%.U........
+0x559725961766  00 00 00 00 00 00 00 00 00 00 10 19 96 25 97 55   .............%.U
+0x559725961776  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00   ................
+0x559725961786  00 00 00 00 00 00 00 00 00 00 70 db a4 25 97 55   ..........p..%.U
+0x559725961796  00 00 50 6c a5 25 97 55 00 00 9b 00 00 00 00 00   ..Pl.%.U........
+0x5597259617a6  00 00 a8 17 96 25 97 55 00 00 a8 17 96 25 97 55   .....%.U.....%.U
+0x5597259617b6  00 00 b8 17 96 25 97 55 00 00 b8 17 96 25 97 55   .....%.U.....%.U
+```
 ## malfind
 - The **malfind** command helps find hidden or injected code/DLLs in user mode memory, based on characteristics such as VAD tag and page permissions.
 - To analyze **malfind**, we should know that only processes with the MZ parameter in the header and *PAGE_EXECUTE_READWRITE* in the VAD (Virtual Address Descriptor) tags are important. Normal processes executed with *PAGE_EXECUTE_WRITE* and *PAGE_EXECUTE_READWRITE* are malicious.
@@ -1016,6 +1063,33 @@ To get help, type 'hh()'
 0xffffffffa0523790  e0 1f 3d a6 00 88 ff ff b8 7f 52 a0 ff ff ff ff   ..=.......R.....
 0xffffffffa05237a0  18 6f 51 a0 ff ff ff ff d8 9c 80 3d 01 88 ff ff   .oQ........=....
 0xffffffffa05237b0  c0 9c 80 3d 01 88 ff ff c0 74 ab 81 ff ff ff ff   ...=.....t......
+```
+- Get the profile symbol name with JMP HookType.
+```
+Prestine
+root@attackdefense:~/memory_dump# vol.py --profile=Linuxprofile-2_6_32-754_el6_x86_64x64 -f vanilla.memory linux_volshell
+Volatility Foundation Volatility Framework 2.6.1
+Current context: process init, pid=1 DTB=0x137638000
+Welcome to volshell! Current memory image is:
+file:///root/memory_dump/vanilla.memory
+To get help, type 'hh()'
+>>> dis(addrspace().profile.get_symbol("tcp4_seq_show"),length=11)
+0xffffffff814e0a80 55                               PUSH RBP
+0xffffffff814e0a81 4889e5                           MOV RBP, RSP
+0xffffffff814e0a84 4881ec10010000                   SUB RSP, 0x110
+>>> 
+
+Infected
+root@attackdefense:~/memory_dump# vol.py --profile=Linuxprofile-2_6_32-754_el6_x86_64x64 -f infection2.memory linux_volshell
+Volatility Foundation Volatility Framework 2.6.1
+Current context: process init, pid=1 DTB=0x136c6a000
+Welcome to volshell! Current memory image is:
+file:///root/memory_dump/infection2.memory
+To get help, type 'hh()'
+>>> dis(addrspace().profile.get_symbol("tcp4_seq_show"),length=11)
+0xffffffff814e0a80 e92bbd0b1f                       JMP 0xffffffffa059c7b0
+0xffffffff814e0a85 81ec10010000                     SUB ESP, 0x110
+>>> 
 ```
 
 # Hunting For Process Injection & Proactive API Monitoring
