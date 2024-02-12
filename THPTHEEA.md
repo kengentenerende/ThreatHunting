@@ -784,7 +784,7 @@ Volatility Foundation Volatility Framework 2.4
 - To display the open handles in a process, use the handles command. This applies to files, registry keys, mutexes, named pipes, events, window stations, desktops, threads, and all other types of securable executive objects. 
 > vol.py -f zeus.vmem — profile=WinXPSP2x86 handles -p 856
 
-## Handles (Process)
+### Handles (Process)
 - You can display handles for a particular process by specifying --pid=PID or the physical offset of an _EPROCESS structure (--physical-offset=OFFSET).
 - You can also filter by object type using -t or --object-type=OBJECTTYPE. For example to only display handles to process objects, do the following:
 ```
@@ -797,7 +797,7 @@ Offset(V)     Pid     Handle     Access Type             Details
 0xff1ec978    856      0x29c   0x1f0fff Process          winlogon.exe(632)
 ```
 
-## Handles (Mutant)
+### Handles (Mutant)
 - We can look for Mutexes that the malware might have created to ensure that only one instance of it is running at a time.
 - We can use the handles plugin, specifying the object type as Mutant and providing the PID.
 ```
@@ -816,7 +816,7 @@ Offset(V)     Pid     Handle     Access Type             Details
 0x80f19200    856      0x450   0x1f0001 Mutant
 0xff1e68b0    856      0x460   0x100000 Mutant           RasPbFile
 ```
-## Handles (File)
+### Handles (File)
 - We can look for File objects that the malware might have created or accessed.
 - We can use the handles plugin, specifying the object type as File and providing the PID.
 ```
@@ -847,7 +847,7 @@ inStation_API_service
 0xff29e890    856      0x33c   0x12019f File             \Device\{9DD6AFA1-8646-
 4720-836B-EDCB1085864A}
 ```
-## Handles (Key)
+### Handles (Key)
 - We can look for Registry Keys objects that the malware might have created or accessed.
 - We can use the handles plugin, specifying the object type as Key and providing the PID.
 ```
