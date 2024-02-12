@@ -1025,35 +1025,35 @@ To get help, type 'hh()'
 
 ### Detection
 
-> **Memdump**\
-    >- memhunter.exe -m 5
+> **Memdump**
+> - memhunter.exe -m 5
 
-> **ProcessHacker**\
-    > - Check for suspcious binary loaded in "Modules" and get base address.\
-    > - Checl address in the "Memory" Tab. Usually it has PAGE_EXECUTE_WRITECOPY(WCX) or RCX protection.
+> **ProcessHacker**
+> - Check for suspcious binary loaded in "Modules" and get base address.
+> - Checl address in the "Memory" Tab. Usually it has PAGE_EXECUTE_WRITECOPY(WCX) or RCX protection.
 
 ## Process Hollowing
 > - minjector.exe -m 7 -s C:\Users\Administrator\Desktop\Tools\memhunter\mhookpayload.dll -t c:\windows\system32\notepad.exe
 ### Detection
-> **Memdump**\
-    > - memhunter.exe -m 4
+> **Memdump**
+> - memhunter.exe -m 4
 
-> **ProcessHacker**\
-    > - 2 base address will be found in "Modules" related to the Process.\
-    > - Check the mapped (lower) address in the "Memory".\
-    > - Supicious "Current Directory" in General information.
+> **ProcessHacker**
+> - 2 base address will be found in "Modules" related to the Process.
+> - Check the mapped (lower) address in the "Memory".
+> - Supicious "Current Directory" in General information.
 
 ## Reflective DLL Injection
 > - minjector.exe -m 5 -s C:\Users\Administrator\Desktop\Tools\memhunter\reflective_dll.x64.dll -t 5104
 
 ### Detection
->**Memdump**\
-    > - memhunter.exe -m 1
+>**Memdump**
+> - memhunter.exe -m 1
 
-> **ProcessHacker**\
-    > - Check for *ntdll.dll!RtlUserThreadStart*.\
-    > - Get the address without prefix in the buttom.\
-    > - Check the payload around this address range.
+> **ProcessHacker**
+> - Check for *ntdll.dll!RtlUserThreadStart*.
+> - Get the address without prefix in the buttom.
+> - Check the payload around this address range.
 
 # Advanced Endpoint Hunting
 
@@ -1079,9 +1079,9 @@ ret 0x18
 
 > **ProcessHacker**
     > - RWX Protection on Amsi.dll payload.
-    >   - VirtualProtect(asb, (UIntPtr)garbage.Length, 0x40, out uint oldProtect);
+    >     - VirtualProtect(asb, (UIntPtr)garbage.Length, 0x40, out uint oldProtect);
     > - But can be revert back to RX Protection to make it look normal again.
-    >   - VirtualProtect(asb, (UIntPtr)garbage.Length, oldProtect, out uint _);
+    >     - VirtualProtect(asb, (UIntPtr)garbage.Length, oldProtect, out uint _);
 
 # Parent PID spoofing
 [PPID-Spoofing](https://github.com/WithSecureLabs/ppid-spoofing/blob/master/PPID-Spoof.ps1)
@@ -1137,11 +1137,11 @@ True
 ### Detection
 
 > **ProcessHacker**
->- On General Tab:
->  - Blank Process with no Image Filename, Directory and Commandline.
->  - Parent Process is Powershell
->- On Threads Tab:
->  - One entry, filename of the payload. On Modules Tab, using the filename, find and Check for the address.
+> - On General Tab:
+>      - Blank Process with no Image Filename, Directory and Commandline.
+>     - Parent Process is Powershell
+> - On Threads Tab:
+>     - One entry, filename of the payload. On Modules Tab, using the filename, find and Check for the address.
 
 - [PEStudio](https://www.winitor.com/download) - Load the dumped file for Static Analysis.
 - [PE-SIEVE](https://github.com/hasherezade/pe-sieve) - Properly dump the payload.
