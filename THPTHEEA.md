@@ -367,7 +367,7 @@ Known bad heuristics and signatures (e.g. YARA signatures).
 
 ## Volatility
 
-### Process 
+### Processes and DLLs 
 List processes
 Try to find suspicious processes (by name) or unexpected child processes (for example a cmd.exe as a child of iexplorer.exe).
 It could be interesting to compare the result of pslist with the one of psscan to identify hidden processes.
@@ -380,6 +380,7 @@ It could be interesting to compare the result of pslist with the one of psscan t
 
 > volatility --profile=PROFILE psxview -f file.dmp # Get hidden process list
 
+> volatility --profile=PROFILE dlllist -f file.dmp # Get loaded dll list
 ### Dump proc
 
 > volatility --profile=Win7SP1x86_23418 procdump --pid=3152 -n --dump-dir=. -f file.dmp
@@ -401,6 +402,21 @@ Anything suspicious was executed?
 >volatility --profile=Win7SP1x86_23418 sockscan -f file.dmp#Open sockets
 
 >volatility --profile=Win7SP1x86_23418 sockets -f file.dmp#Scanner for tcp socket objects
+
+### Registry
+**win**
+
+Low-hanging fruits for suspicious registries
+
+> vol.py --profile=WinXPSP2x86 -f apta.vmem printkey -K "Microsoft\Windows NT\CurrentVersion\Winlogon"
+
+> vol.py --profile=WinXPSP2x86 -f apta.vmem printkey -K "Microsoft\Windows\CurrentVersion\RunOnce"
+
+> vol.py --profile=WinXPSP2x86 -f apta.vmem printkey -K "Microsoft\Windows\CurrentVersion\Run"
+
+## userassist
+- The UserAssist utility displays a table of programs executed on a Windows machine, complete with running count and last execution date and time.
+> vol.py -f zeus.vmem — profile=WinXPSP2x86 userassist
 
 # Volatily - Command Reference Malware (Win)
 
@@ -735,9 +751,18 @@ Disassembly(1):
 ## idt
 - The IDT table stores pointers to ISR (Interrupt Service Routines), which are called when an interrupt is triggered
 
-Every result of this table must point to the **ntoskrnl.exe**.
-> vol.py -f zeus.vmem — profile=WinXPSP2x86 idt | grep -iv unknown
-
+Every result of this table must point to the **ntoskrnl.exe**
+```
+vol.py -f zeus.vmem — profile=WinXPSP2x86 idt | grep -iv unknown
+Volatility Foundation Volatility Framework 2.6
+   CPU  Index   Selector Value      Module               Section
+------ ------ ---------- ---------- -------------------- ------------
+ 0     62        0x8 0x8101e044 UNKNOWN
+ 0     63        0x8 0x80efcdd4 UNKNOWN
+ 0     73        0x8 0xff351dd4 UNKNOWN
+ 0     82        0x8 0x8101eb94 UNKNOWN
+ 0     83        0x8 0x8101cdd4 UNKNOWN
+```
 To get more details about the possible IDT modification, use --verbose:
 ```
 $ python vol.py -f rustock.vmem idt --verbose
@@ -762,13 +787,21 @@ Volatility Foundation Volatility Framework 2.4
 ## Handles (Process)
 - You can display handles for a particular process by specifying --pid=PID or the physical offset of an _EPROCESS structure (--physical-offset=OFFSET).
 - You can also filter by object type using -t or --object-type=OBJECTTYPE. For example to only display handles to process objects, do the following:
-> vol.py -f zeus.vmem — profile=WinXPSP2x86 handles -p 856 -t Process
+```
+$ vol.py --profile=WinXPSP2x86 -f aptb.vmem handles -p 856 -t Process
+Volatility Foundation Volatility Framework 2.6
+Offset(V)     Pid     Handle     Access Type             Details
+---------- ------ ---------- ---------- ---------------- -------
+0xff217560    856      0x14c   0x1f0fff Process          svchost.exe(936)
+0xff1ecda0    856      0x298   0x1f0fff Process          csrss.exe(608)
+0xff1ec978    856      0x29c   0x1f0fff Process          winlogon.exe(632)
+```
 
 ## Handles (Mutant)
 - We can look for Mutexes that the malware might have created to ensure that only one instance of it is running at a time.
 - We can use the handles plugin, specifying the object type as Mutant and providing the PID.
 ```
-C:\volatility>vol.py --profile=WinXPSP2x86 -f C:\Users\Administrator\Desktop\memory_dump\apta.vmem handles -p 856 -t mutant
+$ vol.py --profile=WinXPSP2x86 -f C:\Users\Administrator\Desktop\memory_dump\apta.vmem handles -p 856 -t mutant
 Volatility Foundation Volatility Framework 2.6
 Offset(V)     Pid     Handle     Access Type             Details
 ---------- ------ ---------- ---------- ---------------- -------
@@ -782,6 +815,51 @@ Offset(V)     Pid     Handle     Access Type             Details
 0xff27b7e8    856      0x43c   0x1f0001 Mutant           _AVIRA_2108
 0x80f19200    856      0x450   0x1f0001 Mutant
 0xff1e68b0    856      0x460   0x100000 Mutant           RasPbFile
+```
+## Handles (File)
+- We can look for File objects that the malware might have created or accessed.
+- We can use the handles plugin, specifying the object type as File and providing the PID.
+```
+$ vol.py --profile=WinXPSP2x86 -f C:\Users\Administrator\Desktop\mem
+ory_dump\aptb.vmem handles -p 856 -t File
+Volatility Foundation Volatility Framework 2.6
+Offset(V)     Pid     Handle     Access Type             Details
+---------- ------ ---------- ---------- ---------------- -------
+0xff2495f8    856        0xc   0x100020 File             \Device\HarddiskVolume1
+\WINDOWS\system32
+0xff26beb8    856       0x4c   0x100001 File             \Device\KsecDD
+0xff26bbf8    856       0x64   0x100020 File             \Device\HarddiskVolume1
+\WINDOWS\WinSxS\x86_Microsoft.Windows.Common-Controls_6595b64144ccf1df_6.0.2600.
+2180_x-ww_a84f1ff9
+0xff269668    856       0xb8   0x12019f File             \Device\NamedPipe\net\N
+tControlPipe2
+0xff25d4b8    856      0x104   0x100000 File             \Device\Dfs
+0xff27a280    856      0x28c   0x12019f File             \Device\Termdd
+0xff27e028    856      0x294   0x12019f File             \Device\Termdd
+0xff260028    856      0x2d0   0x12019f File             \Device\NamedPipe\Ctx_W
+inStation_API_service
+0xff284028    856      0x2d4   0x12019f File             \Device\NamedPipe\Ctx_W
+inStation_API_service
+0xff262330    856      0x2f4   0x12019f File             \Device\Termdd
+0xff220330    856      0x2f8   0x12019f File             \Device\Termdd
+0x8102ad30    856      0x334   0x12019f File             \Device\HarddiskVolume1
+\WINDOWS\system32\drivers\str.sys
+0xff29e890    856      0x33c   0x12019f File             \Device\{9DD6AFA1-8646-
+4720-836B-EDCB1085864A}
+```
+## Handles (Key)
+- We can look for Registry Keys objects that the malware might have created or accessed.
+- We can use the handles plugin, specifying the object type as Key and providing the PID.
+```
+$ vol.py --profile=WinXPSP2x86 -f C:\Users\Administrator\Desktop\mem
+ory_dump\aptb.vmem handles -p 856 -t Key
+Volatility Foundation Volatility Framework 2.6
+Offset(V)     Pid     Handle     Access Type             Details
+---------- ------ ---------- ---------- ---------------- -------
+0xe1a15708    856       0x1c  0x20f003f Key              MACHINE
+0xe1a1a020    856       0x44    0x20019 Key              MACHINE\SOFTWARE\MICROSOFT\WINDOWS NT\CURRENTVERSION\DRIVERS32
+0xe1a1afb8    856       0x58    0x20019 Key              MACHINE\SOFTWARE\MICROSOFT\WINDOWS NT\CURRENTVERSION\DRIVERS32
+0xe17dce08    856      0x234    0xf003f Key              MACHINE\SOFTWARE\MICROSOFT\WINDOWS NT\CURRENTVERSION\WINLOGON
 ```
 
 ## callbacks
@@ -797,51 +875,78 @@ Volatility is the only memory forensics platform with the ability to print an as
 - IoRegisterShutdownNotification (shutdown callbacks).
 - DbgSetDebugPrintCallback (debug print callbacks on Vista and 7).
 - DbgkLkmdRegisterCallback (debug callbacks on 7).
-> C:\volatility>vol.py --profile=WinXPSP2x86 -f C:\Users\Administrator\Desktop\mem
-ory_dump\aptb.vmem callbacks
+```
+$ vol.py --profile=WinXPSP2x86 -f aptb.vmem callbacks
+Volatility Foundation Volatility Framework 2.6
+Type                                 Callback   Module               Details
+------------------------------------ ---------- -------------------- -------
+IoRegisterShutdownNotification       0xfc4ab73a MountMgr.sys         \Driver\MountMgr
+GenericKernelCallback                0xfc58e194 vmci.sys             -
+GenericKernelCallback                0xff0d2ea7 00004A2A             -
+PsSetCreateThreadNotifyRoutine       0xff0d2ea7 00004A2A             -
+PsSetCreateProcessNotifyRoutine      0xfc58e194 vmci.sys             -
+KeBugCheckCallbackListHead           0xfc1e85ed NDIS.sys             Ndis miniport
+```
 
 ## modules
 - To view the list of kernel drivers loaded on the system, use the modules command. This walks the doubly-linked list of LDR_DATA_TABLE_ENTRY structures pointed to by PsLoadedModuleList. Similar to the pslist command, this relies on finding the KDBG structure.
 ```
-$ python vol.py -f ~/Desktop/win7_trial_64bit.raw --profile=Win7SP0x64 modules
-Volatility Foundation Volatility Framework 2.4
-Offset(V)          Name                 Base                             Size File
------------------- -------------------- ------------------ ------------------ ----
-0xfffffa80004a11a0 ntoskrnl.exe         0xfffff8000261a000           0x5dd000 \SystemRoot\system32\ntoskrnl.exe
-0xfffffa80004a10b0 hal.dll              0xfffff80002bf7000            0x49000 \SystemRoot\system32\hal.dll
-0xfffffa80004a7950 kdcom.dll            0xfffff80000bb4000             0xa000 \SystemRoot\system32\kdcom.dll
-0xfffffa80004a7860 mcupdate.dll         0xfffff88000c3a000            0x44000 \SystemRoot\system32\mcupdate_GenuineIntel.dll
-0xfffffa80004a7780 PSHED.dll            0xfffff88000c7e000            0x14000 \SystemRoot\system32\PSHED.dll
-0xfffffa80004a7690 CLFS.SYS             0xfffff88000c92000            0x5e000 \SystemRoot\system32\CLFS.SYS
-0xfffffa80004a8010 CI.dll               0xfffff88000cf0000            0xc0000 \SystemRoot\system32\CI.dll
+$ vol.py --profile=WinXPSP2x86 -f aptb.vmem modules
+Volatility Foundation Volatility Framework 2.6
+Offset(V)  Name                 Base             Size File
+---------- -------------------- ---------- ---------- ----
+0xff1fa420 ndisuio.sys          0xf386d000     0x4000 \SystemRoot\system32\DRIVE
+RS\ndisuio.sys
+0x80f04700 mrxdav.sys           0xf35d8000    0x2d000 \SystemRoot\system32\DRIVE
+RS\mrxdav.sys
+0x80f64800 ParVdm.SYS           0xfc9f5000     0x2000 \SystemRoot\System32\Drive
+rs\ParVdm.SYS
+0x80ef7d70 vmmemctl.sys         0xfc9f7000     0x2000 \??\C:\Program Files\VMwar
+e\VMware Tools\Drivers\memctl\vmmemctl.sys
+0x80f034a8 srv.sys              0xf355d000    0x53000 \SystemRoot\system32\DRIVE
+RS\srv.sys
+0x80f55508 HTTP.sys             0xf329c000    0x41000 \SystemRoot\System32\Drive
+rs\HTTP.sys
+0x80fb16c0 wdmaud.sys           0xf3147000    0x15000 \SystemRoot\system32\drive
+rs\wdmaud.sys
+0xff381bd8 sysaudio.sys         0xf337d000     0xf000 \SystemRoot\system32\drive
+rs\sysaudio.sys
+0x80fae8b0 kmixer.sys           0xf2fe0000    0x2a000 \SystemRoot\system32\drive
+rs\kmixer.sys
+0xff2837e8 Fastfat.SYS          0xf2ef5000    0x23000 \SystemRoot\System32\Drive
+rs\Fastfat.SYS
+0xff375b08 00004A2A             0xff0d1000     0x8361 00004A2A
 ```
 ## modscan
 - The modscan command finds LDR_DATA_TABLE_ENTRY structures by scanning physical memory for pool tags. This can pick up previously unloaded drivers and drivers that have been hidden/unlinked by rootkits.
 ```
-$ python vol.py -f ~/Desktop/win7_trial_64bit.raw --profile=Win7SP0x64 modscan
-Volatility Foundation Volatility Framework 2.4
-Offset(P)          Name                 Base                             Size File
------------------- -------------------- ------------------ ------------------ ----
-0x00000000173b90b0 DumpIt.sys           0xfffff88003980000            0x11000 \??\C:\Windows\SysWOW64\Drivers\DumpIt.sys
-0x000000001745b180 mouhid.sys           0xfffff880037e9000             0xd000 \SystemRoot\system32\DRIVERS\mouhid.sys
-0x0000000017473010 lltdio.sys           0xfffff88002585000            0x15000 \SystemRoot\system32\DRIVERS\lltdio.sys
-0x000000001747f010 rspndr.sys           0xfffff8800259a000            0x18000 \SystemRoot\system32\DRIVERS\rspndr.sys
-0x00000000174cac40 dxg.sys              0xfffff96000440000            0x1e000 \SystemRoot\System32\drivers\dxg.sys
-0x0000000017600190 monitor.sys          0xfffff8800360c000             0xe000 \SystemRoot\system32\DRIVERS\monitor.sys
-0x0000000017601170 HIDPARSE.SYS         0xfffff880037de000             0x9000 \SystemRoot\system32\DRIVERS\HIDPARSE.SYS
-0x0000000017604180 USBD.SYS             0xfffff880037e7000             0x2000 \SystemRoot\system32\DRIVERS\USBD.SYS
-0x0000000017611d70 cdrom.sys            0xfffff88001944000            0x2a000 \SystemRoot\system32\DRIVERS\cdrom.sys
+$ vol.py --profile=WinXPSP2x86 -f aptb.vmem modscan
+Volatility Foundation Volatility Framework 2.6
+Offset(P)          Name                 Base             Size File
+------------------ -------------------- ---------- ---------- ----
+0x0000000004b59b08 00004A2A             0xff0d1000     0x8361 00004A2A
+0x0000000004be4628 Npfs.SYS             0xfc7cb000     0x8000 \SystemRoot\System32\Drivers\Npfs.SYS
+0x0000000004be4e78 ipsec.sys            0xf3c01000    0x13000 \SystemRoot\system32\DRIVERS\ipsec.sys
+0x0000000004be7398 vga.sys              0xfc7bb000     0x6000 \SystemRoot\System32\drivers\vga.sys
+0x0000000004be9e80 RDPCDD.sys           0xfc9b5000     0x2000 \SystemRoot\System32\DRIVERS\RDPCDD.sys
+0x0000000004c2c398 Beep.SYS             0xfc9b1000     0x2000 \SystemRoot\System32\Drivers\Beep.SYS
+0x0000000004c2da50 mnmdd.SYS            0xfc9b3000     0x2000 \SystemRoot\System32\Drivers\mnmdd.SYS
+0x0000000005c597e8 Fastfat.SYS          0xf2ef5000    0x23000 \SystemRoot\System32\Drivers\Fastfat.SYS
+0x00000000063c7108 dxgthk.sys           0xfcb25000     0x1000 \SystemRoot\System32\drivers\dxgthk.sys
+0x00000000065a2420 ndisuio.sys          0xf386d000     0x4000 \SystemRoot\system32\DRIVERS\ndisuio.sys
+0x00000000066f02a0 win32k.sys           0xbf800000   0x1c1000 \SystemRoot\System32\win32k.sys
 ```
 ## moddump
 - To extract a kernel driver to a file, use the moddump command. Supply the output directory with -D or --dump-dir=DIR. Without any additional parameters, all drivers identified by modlist will be dumped. 
-- If you want a specific driver, supply a regular expression of the driver's name with --regex=REGEX or the module's base address with --base=BASE.
+- If you want a specific driver, supply a regular expression of the driver's name with --regex=REGEX or the **module's base address** with --base=BASE.
 
-> C:\volatility>vol.py --profile=WinXPSP2x86 -f C:\Users\Administrator\Desktop\mem
-ory_dump\aptb.vmem moddump -b 0xfc2c0876 -D _moddump
-
-## userassist
-- The UserAssist utility displays a table of programs executed on a Windows machine, complete with running count and last execution date and time.
-> vol.py -f zeus.vmem — profile=WinXPSP2x86 userassist
+```
+C:\volatility>vol.py --profile=WinXPSP2x86 -f aptb.vmem moddump -b 0xff0d1000 -D moddump
+Volatility Foundation Volatility Framework 2.6
+Module Base Module Name          Result
+----------- -------------------- ------
+0x0ff0d1000 00004A2A             OK: driver.ff0d1000.sys
+```
 
 # Volatility - Rootkit Detection Linux
 
