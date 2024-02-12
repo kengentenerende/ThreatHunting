@@ -1078,10 +1078,10 @@ ret 0x18
 - [AmsiPatchDetection](https://github.com/IonizeCbr/AmsiPatchDetection) - Detect AMSI.dll in memory patch
 
 > **ProcessHacker**
-    > - RWX Protection on Amsi.dll payload.
-    >     - VirtualProtect(asb, (UIntPtr)garbage.Length, 0x40, out uint oldProtect);
-    > - But can be revert back to RX Protection to make it look normal again.
-    >     - VirtualProtect(asb, (UIntPtr)garbage.Length, oldProtect, out uint _);
+> - RWX Protection on Amsi.dll payload.
+>   - VirtualProtect(asb, (UIntPtr)garbage.Length, 0x40, out uint oldProtect);
+> - But can be revert back to RX Protection to make it look normal again.
+>   - VirtualProtect(asb, (UIntPtr)garbage.Length, oldProtect, out uint _);
 
 # Parent PID spoofing
 [PPID-Spoofing](https://github.com/WithSecureLabs/ppid-spoofing/blob/master/PPID-Spoof.ps1)
