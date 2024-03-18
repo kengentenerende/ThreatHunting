@@ -1,5 +1,47 @@
 # THP Cheat Sheet Hunting .Net Malware
 
+## Sysmon Event ID 1 - Process Creation
+```
+Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=1} | Where-Object {$_.Properties[10].Value -ilike "*TARGET_COMMANDLINE*"} | fl
+```
+```
+ Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=1} | ? {$_
+.Properties[21].Value -ilike "*TARGET_PARENTCOMMANDLINE*"} | fl
+```
+
+```
+Message      : Process Create:
+               RuleName: -
+               UtcTime: 2022-07-06 06:18:08.890
+               ProcessGuid: {221ce7aa-2920-62c5-6501-00000000e000}
+               ProcessId: 3760
+               Image: C:\Windows\SysWOW64\cmd.exe
+               FileVersion: 10.0.17763.592 (WinBuild.160101.0800)
+               Description: Windows Command Processor
+               Product: Microsoft® Windows® Operating System
+               Company: Microsoft Corporation
+               OriginalFileName: Cmd.Exe
+               CommandLine: "C:\Windows\System32\cmd.exe" /c copy
+               C:\Windows\Microsoft.NET\Framework64\v4.0.30319\MSBuild.exe
+               C:\Users\Public\Downloads\Windows_Reporting.exe
+               CurrentDirectory:
+               C:\Users\student\AppData\Local\Packages\Microsoft.MicrosoftEdge_8abkyb35bbwe\TempState\Downloads\
+               User: ATTACKDEFENSE\Administrator
+               LogonGuid: {221ce7aa-1494-62c5-c389-230000000000}
+               LogonId: 0x2389C3
+               TerminalSessionId: 2
+               IntegrityLevel: High
+               Hashes: MD5=C43699F84A68608E7E57C43B7761BBB8,SHA256=2EDB180274A51C83DDF8414D99E90315A9047B18C51DFD070326
+               214D4DA59651,IMPHASH=392B4D61B1D1DADC1F06444DF258188A
+               ParentProcessGuid: {221ce7aa-2920-62c5-6401-00000000e000}
+               ParentProcessId: 5560
+               ParentImage: C:\Windows\SysWOW64\mshta.exe
+               ParentCommandLine: "C:\Windows\SysWOW64\mshta.exe" "C:\Users\student\AppData\Local\Packages\Microsoft.Mi
+               crosoftEdge_8abkyb35bbwe\TempState\Downloads\report.hta"
+               {1E460BD7-F1C3-4B2E-88BF-4E770A288AF5}{1E460BD7-F1C3-4B2E-88BF-4E770A288AF5}
+               ParentUser: ATTACKDEFENSE\Administrator
+```
+
 # Get-WinEvent PowerShell cmdlet Cheat Sheet
 
 Abstract
