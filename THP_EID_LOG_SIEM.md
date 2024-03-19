@@ -528,3 +528,10 @@ As AMSI provides a deep look into scripts, adversaries attempt to bypass it befo
 Reference: 
 - [Amsi-Bypass-Powershell](https://github.com/S3cur3Th1sSh1t/Amsi-Bypass-Powershell)
 - [Hunting for AMSI bypasses](https://blog.f-secure.com/hunting-for-amsi-bypasses/)
+
+## COM Hijacking
+As hunters, our focus is therefore any registry additions or modifications of CLSIDs on the keys LocalServer32 or InprocServer32. If baselines are not available to compare with, we could also hunt by looking for presence of objects within HKEY_CURRENT_USER\Software\Classes\CLSID\  as their presence alone is anomalous behavior
+![alt text](image.png)
+References:
+- [ABUSING THE COM REGISTRY STRUCTURE: CLSID, LOCALSERVER32, & INPROCSERVER32](https://bohops.com/2018/06/28/abusing-com-registry-structure-clsid-localserver32-inprocserver32/)
+- [ABUSING THE COM REGISTRY STRUCTURE (PART 2): HIJACKING & LOADING TECHNIQUES](https://bohops.com/2018/08/18/abusing-the-com-registry-structure-part-2-loading-techniques-for-evasion-and-persistence/)
