@@ -517,15 +517,16 @@ In Windows, there is a kernel-level tracing facility, which logs kernel and/or a
 Essentially, AMSI provides insight into in-memory buffers, allowing AV software to analyze a de-obfuscated script, as opposed to a heavily obfuscated one stored in a file on disk. AMSI makes the execution of malicious scripts significantly more difficult. 
 
 AMSI integrates in the following components: 
-• User Account Control (UAC) 
-• PowerShell 
-• Windows Script Host 
-• JavaScript and VBScript 
-• Office VBA macro
+- User Account Control (UAC) 
+- PowerShell 
+- Windows Script Host 
+- JavaScript and VBScript 
+- Office VBA macro
 
 As AMSI provides a deep look into scripts, adversaries attempt to bypass it before running malicious scripts. The following Github project contains examples of 14 bypasses as of the time of this writing. Some of them unload AMSI from the process, while others patch it in memory directly. 
 ![alt text](image-AMSIBYPASSPS.png)
 When hunting for those techniques, they are best combined with the logging capability available. The last command generates event 4104 (presence of “amsi” is suspicious):
+![alt text](image-AMSIBYPASSEL.png)
 
 Reference: 
 - [Amsi-Bypass-Powershell](https://github.com/S3cur3Th1sSh1t/Amsi-Bypass-Powershell)
