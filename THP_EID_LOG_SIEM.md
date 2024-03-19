@@ -23,7 +23,7 @@ All Version of Windows maintain 3 core event logs:
 |    <br>Security       |    <br>%SYSTEMROOT%\System32\Winevt\Logs\Security.evtx           |
 
 ## EVT & EVTX Comparison
-From Windows XP Old Event Id, add 4096 to convert it to Win 7/8/10 Event ID
+From Windows XP Old Event ID, add 4096 to convert it to Win 7/8/10 Event ID
 
 | Windows XP Old | Windows 7/8/10 | Description                                 |
 |----------------|----------------|---------------------------------------------|
@@ -35,24 +35,19 @@ From Windows XP Old Event Id, add 4096 to convert it to Win 7/8/10 Event ID
 | 632            | 4728           | Membership has been added to a global group |
 | 2949           | 7045           | Service Creation                            |
 
+
+
 ## Event Viewer
 You can access the Event Viewer by either double clicking the evtx file directly, by typing *eventvwr* in the Search box, or by navigating to:
 ```
  Control Panel > Administrative Tools > Event Viewer
 ```
 
-Successful Account Authentication
+# Windows Event IDs
 
-Creating of a new user
+## Hunting Suspicious Accounts
 
-A member has been added to a local group
-
-Membership has been added to a global group
-
-Service Creation
-# Hunting Suspicious Accounts
-
-Event IDs specific to account logon events
+### Event IDs specific to account logon events
 - 4624 (successful logon) 
 - 4625 (failed logon) 
 - 4634 (successful logoff) 
@@ -66,7 +61,7 @@ Event IDs specific to account logon events
 - 4778 (session reconnected) 
 - 4779 (session disconnected)
 
-Event IDs specific to account management: 
+### Event IDs specific to account management: 
 - 4720 (account created) 
 - 4722 (account enabled) 
 - 4724 (attempt to reset password) 
@@ -74,7 +69,7 @@ Event IDs specific to account management:
 - 4732 (user added to local group) 
 - 4756 (user added to universal group)
 
-# Logon Types
+### Logon Types
 
 |    <br>Logon Type     |    <br>Logon Title           |    <br>Description                                                                                               |
 |-----------------------|------------------------------|------------------------------------------------------------------------------------------------------------------|
@@ -88,12 +83,81 @@ Event IDs specific to account management:
 |    <br>10             |    <br>RemoteInteractive     |    <br>A user logged onto   computer using Terminal Services or RDP.                                             |
 |    <br>11             |    <br>CachedInteractive     |    <br>A user logged onto   computer using network credentials which were stored locally on the computer.        |
 
+## Hunting Password Attacks
+Overall, looking for a rapid succession of failed attempts to the same machine, or multiple machines, repeatedly in a small amount of time with each attempt, may indicate Password Spraying/Guessing attack. 
 
-## Get-WinEvent PowerShell cmdlet Cheat Sheet
+Of course, we know the attacker can change the timing between each attempt to make it look less suspicious. 
 
-Abstract
----------
+|    <br>ID                  |    <br>Description      |
+|----------------------------|-------------------------|
+|    <br>Event ID 4625       |    <br>failed logon     |
+|    <br>Logon Type 3        |    <br>network logon    |
 
+
+## Hunting Pass The Hash
+We should also look for the Logon Process to be NtLmSsP and the key length to be set to 0
+You can read more about this technique, here:
+[How to Detect Pass-the-Hash Attacks](https://blog.netwrix.com/2021/11/30/how-to-detect-pass-the-hash-attacks/)
+
+|    <br>ID                  |    <br>Description                               |
+|----------------------------|--------------------------------------------------|
+|    <br>Event ID 4624       |    <br>An account was successfully logged on     |
+|    <br>Logon Type 3        |    <br>network logon                             |
+
+
+## Hunting Golden Tickets
+
+Oftentimes, attackers leverage native Kerberos functionality. For example, this is the case when a golden ticket is created. A golden ticket is a forged Ticket-Granting Ticket that provides the attacker with access to every network asset. You should therefore be familiar with Kerberos-related Event IDs, like 4768, when hunting for this type of attack. 
+
+- [Event-4768](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4768)
+- [Detecting Lateral Movements in Windows Infrastructure](https://cert.europa.eu/static/WhitePapers/CERT-EU_SWP_17-002_Lateral_Movements.pdf)
+
+|    <br>ID              |    <br>Description                                             |
+|------------------------|----------------------------------------------------------------|
+|    <br>Event ID        |    <br>4768                                                    |
+|    <br>Category        |    <br>Account Logon                                           |
+|    <br>Sub category    |    <br>Kerberos Authentication Service                         |
+|    <br>Description     |    <br>A Kerberos authentication ticket (TGT) was requested    |
+
+## Hunting RDP Sessions
+If your network environment is accustomed to a lot of RDP connections into other machines, then this can be difficult to hunt for. When hunting for RDP sessions, we’re looking for Event IDs 4624 & 4778 with Logon Type 10 (Terminal Services or RDP). Also, note the expected Event IDs after successful or failed authentication attempts. 
+
+|    <br>ID              |    <br>Description                                          |
+|------------------------|-------------------------------------------------------------|
+|    <br>Event IDs 4624  |    <br>Account Logon An account was successfully logged on. |
+|    <br>Event IDs 4778  |    <br>Terminal Services or RDP                             |
+|    <br>Logon Type 10   |    <br>Terminal Services or RDP                             |
+
+## Hunting PsExec
+
+PsExec, part of the SysInternals Suite, is one of the common lateral movement tools, which provides the capability to execute remote commands. Due to the way that PsExec works, we can utilize the following Event IDs to hunt for it:
+
+|    <br>ID                   |    <br>Description                                             |
+|-----------------------------|----------------------------------------------------------------|
+|    <br>Event ID 5145        |    <br>(captures requests to shares, we are interested in ADMIN$ and IPC$) |
+|    <br>Event ID 5140        |    <br>(share successfully accessed)                                       |
+|    <br>Event ID 4697 / 7045 |    <br>(service creation)                                                  |
+|    <br>Event ID 4688        |    <br>Sysmon EID 1                                                        |
+
+## Hunting WMI Persistence
+Hunting WMI usage for persistence involves th a WMI subscription. Therefore, our goal is to search identify any newly registered subscriptions. One way to achieve this is by utilizing WMI itself for that activity.
+
+## Hunting Scheduled Tasks
+Event ID 4698 (a scheduled task was created) is what we’ll hunt for. Also, Event IDs 106, 200, and 201 all relate to scheduled tasks. Here is an example log entry. 
+
+|    <br>ID              |    <br>Description                                          |
+|------------------------|-------------------------------------------------------------|
+|    <br>Event IDs 4698  |    <br>(a scheduled task was created) |
+|    <br>106             |    <br>generated when a new task is created, but it does not necessarily mean that the task has been executed |
+|    <br>200             |    <br>action run - Windows Task Scheduler logs |
+|    <br>201             |    <br>action completed - Windows Task Scheduler logs |
+
+
+
+
+
+
+# Get-WinEvent PowerShell cmdlet Cheat Sheet
 Where to Acquire
 ---------
 PowerShell is natively installed in Windows Vista and newer, and includes the Get-WinEvent cmdlet by default.
