@@ -486,4 +486,45 @@ Enhanced logging (Script block logging) is great when hunting for malicious comm
 - [SigmaRulesWindowsPowershell](https://github.com/Neo23x0/sigma/tree/master/rules/windows/powershell )
 - [THE INCREASED USE OF POWERSHELL IN ATTACKS](https://docs.broadcom.com/doc/increased-use-of-powershell-in-attacks-16-en) 
  
+## Malicious .NET and LDAP
 
+### Execute-Assembly
+Many of the PowerShell tools are being rewritten in .NET instead, in an attempt to avoid detection. Therefore, offensive tools now support injection and execution of .NET assemblies, one example is Cobalt Strike through its *execute-assembly* module.
+
+- [Hunting For In- Memory .NET Attacks](https://www.elastic.co/security-labs/hunting-memory-net-attacks)
+
+### .NET Tools
+The enormous abuse of PowerShell resulted in close monitoring by defenders and EDR solutions, which are able to (often) detect and block even obfuscated commands. 
+- [GhostPack](https://github.com/GhostPack)
+- [Rubeus](https://github.com/GhostPack/Rubeus)
+- [SharpView](https://github.com/tevora-threat/SharpView)
+- [SharpHound](https://github.com/BloodHoundAD/SharpHound)
+
+Hunting for the usage of .NET tools like Rubeus, combined with injection techniques such as Cobalt Strike's *execute-assembly* has proven to be a challenge task because: 
+• Reflective Injection is used, so nothing is stored on disk 
+• After execution, the memory region is cleared and there are very little traces of injection and/or what was injected (even in memory!).
+
+
+### Event Tracing for Windows & SilkETW 
+In Windows, there is a kernel-level tracing facility, which logs kernel and/or application level events to a log file known as **Event Tracing for Windows** (ETW). Although less well known, perhaps due to its complexity and the mass of events generated, it can provide valuable data for a threat hunter. **FuzzySec** released SilkETW to help deal with the complexity of setting up ETW.
+
+- [Detecting Malicious Use of .NET](https://blog.f-secure.com/detecting-malicious-use-of-net-part-1/)
+- [SilkETW & SilkService](https://github.com/mandiant/SilkETW)
+- [Threat Hunting with ETW events and HELK](https://medium.com/threat-hunters-forge/threat-hunting-with-etw-events-and-helk-part-1-installing-silketw-6eb74815e4a0)
+
+## AMSI
+
+Essentially, AMSI provides insight into in-memory buffers, allowing AV software to analyze a de-obfuscated script, as opposed to a heavily obfuscated one stored in a file on disk. AMSI makes the execution of malicious scripts significantly more difficult. 
+
+AMSI integrates in the following components: 
+• User Account Control (UAC) 
+• PowerShell 
+• Windows Script Host 
+• JavaScript and VBScript 
+• Office VBA macro
+
+As AMSI provides a deep look into scripts, adversaries attempt to bypass it before running malicious scripts. The following Github project contains examples of 14 bypasses as of the time of this writing. Some of them unload AMSI from the process, while others patch it in memory directly. 
+
+Reference: 
+- [Amsi-Bypass-Powershell](https://github.com/S3cur3Th1sSh1t/Amsi-Bypass-Powershell)
+- [Hunting for AMSI bypasses](https://blog.f-secure.com/hunting-for-amsi-bypasses/)
