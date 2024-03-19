@@ -1,6 +1,42 @@
 # THP Cheat Sheet Event IDs, Logging, and SIEMs
 
+# Hunting Suspicious Accounts
 
+Event IDs specific to account logon events
+- 4624 (successful logon) 
+- 4625 (failed logon) 
+- 4634 (successful logoff) 
+- 4647 (user-initiated logoff) 
+- 4648 (logon using explicit credentials) 
+- 4672 (special privileges assigned) 
+- 4768 (Kerberos ticket (TGT) requested) 
+- 4769 (Kerberos service ticket requested) 
+- 4771 (Kerberos pre-auth failed) 
+- 4776 (attempted to validate credentials) 
+- 4778 (session reconnected) 
+- 4779 (session disconnected)
+
+Event IDs specific to account management: 
+- 4720 (account created) 
+- 4722 (account enabled) 
+- 4724 (attempt to reset password) 
+- 4728 (user added to global group) 
+- 4732 (user added to local group) 
+- 4756 (user added to universal group)
+
+# Logon Types
+
+|    <br>Logon Type     |    <br>Logon Title           |    <br>Description                                                                                               |
+|-----------------------|------------------------------|------------------------------------------------------------------------------------------------------------------|
+|    <br>2              |    <br>Interactive           |    <br>A user physically   logged onto this computer                                                             |
+|    <br>3              |    <br>Network               |    <br>A user or computer   logged on from the network.                                                          |
+|    <br>4              |    <br>Batch                 |    <br>Used by batch   servers where processes may be executing on behalf of a user, like scheduled   tasks.     |
+|    <br>5              |    <br>Service               |    <br>A service started   by the Service Control Manager.                                                       |
+|    <br>7              |    <br>Unlock                |    <br>The workstation   was unlocked.                                                                           |
+|    <br>8              |    <br>NetworkClear text     |    <br>Network   credentials sent in cleartext                                                                   |
+|    <br>9              |    <br>NewCredentials        |    <br>A caller cloned   its current token and specified new credentials (runas command).                        |
+|    <br>10             |    <br>RemoteInteractive     |    <br>A user logged onto   computer using Terminal Services or RDP.                                             |
+|    <br>11             |    <br>CachedInteractive     |    <br>A user logged onto   computer using network credentials which were stored locally on the computer.        |
 
 
 ## Get-WinEvent PowerShell cmdlet Cheat Sheet
