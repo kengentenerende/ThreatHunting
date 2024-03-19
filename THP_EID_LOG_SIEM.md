@@ -461,4 +461,29 @@ Cheat Sheet Version
 --------------
 ### **`Version 1.0`**
 
+# Advance Hunting
+
+## LOLBAS 
+**Living-off-the-Land Binaries and Scripts** (LOLBAS) is a term that describes Microsoft-signed, native to the OS files (or downloadable from Microsoft) that, in addition to their normal purpose, exhibit functionality which is useful to an APT or Red Team. Abusing LOLBAS increases attackers’ chances of evading detection and bypassing white listing solutions. Detection is hard, as LOLBAS activity blends in with normal activity. 
+
+A continuously updated list with all known LOBAS files is maintained here. The list also provides descriptions, sample usage when invoked at the command line and proposed detection techniques. Common functionalities of LOLBAS are: 
+- Execution 
+- Download 
+- Copy 
+
+Resources:
+- [Living Off The Land Binaries, Scripts and Libraries](https://lolbas-project.github.io/)
+- [Fantastic Red-Team Attacks And How To Find Them](https://i.blackhat.com/USA-19/Thursday/us-19-Smith-Fantastic-Red-Team-Attacks-And-How-To-Find-Them.pdf)
+- [Living off the land and fileless attack techniques](https://docs.broadcom.com/doc/istr-living-off-the-land-and-fileless-attack-techniques-en)
+- [MITRE Cyber Analytics Repository](https://car.mitre.org/)
+
+## (Unmanaged) PowerShell
+In response to the high abuse and with the release of PowerShell version 5, Microsoft, in the blog post PowerShell ♥ the Blue Team, released even better enhancements to the logging capability, added Constrained language, and PowerShell scripts are submitted to AMSI – the antimalware interface. 
+- [PowerShell ♥ the Blue Team](https://devblogs.microsoft.com/powershell/powershell-the-blue-team/)
+
+
+Enhanced logging (Script block logging) is great when hunting for malicious commands, as it gives visibility into the script in a plain, de-obfuscated version of a it. Some useful techniques on hunting malicious commands are described in the Sigma project under the PowerShell section. Additionally, FireEye released a great whitepaper on malicious use of PowerShell.
+- [SigmaRulesWindowsPowershell](https://github.com/Neo23x0/sigma/tree/master/rules/windows/powershell )
+- [THE INCREASED USE OF POWERSHELL IN ATTACKS](https://docs.broadcom.com/doc/increased-use-of-powershell-in-attacks-16-en) 
+ 
 
