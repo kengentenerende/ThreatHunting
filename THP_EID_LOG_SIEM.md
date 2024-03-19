@@ -485,7 +485,13 @@ In response to the high abuse and with the release of PowerShell version 5, Micr
 Enhanced logging (Script block logging) is great when hunting for malicious commands, as it gives visibility into the script in a plain, de-obfuscated version of a it. Some useful techniques on hunting malicious commands are described in the Sigma project under the PowerShell section. Additionally, FireEye released a great whitepaper on malicious use of PowerShell.
 - [SigmaRulesWindowsPowershell](https://github.com/Neo23x0/sigma/tree/master/rules/windows/powershell )
 - [THE INCREASED USE OF POWERSHELL IN ATTACKS](https://docs.broadcom.com/doc/increased-use-of-powershell-in-attacks-16-en) 
- 
+
+We can enable Turn On Module Logging & Turn on PowerShell Transcription as well, along with Turn On PowerShell Script Block Logging. 
+Event IDs to hunt for are 
+- 4104
+- 4105
+- 4106
+
 ## Malicious .NET and LDAP
 
 ### Execute-Assembly
