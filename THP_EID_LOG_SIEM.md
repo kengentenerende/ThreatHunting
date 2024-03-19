@@ -152,91 +152,85 @@ Event ID 4698 (a scheduled task was created) is what we’ll hunt for. Also, Eve
 |    200             |    action run - Windows Task Scheduler logs |
 |    201             |    action completed - Windows Task Scheduler logs |
 
+## Hunting Service Creations
 
+Event ID 4697 (a service was installed in the system) is what we’ll be hunting for to find the creation of suspiciou services.
 
+|    ID              |    Description                                             |
+|--------------------|------------------------------------------------------------|
+|    Event ID 4697   |   (a service was installed in the system)                  |
 
+### Hunting Network Shares
 
+Event ID 4776 is specific to the NTLM protocol and notifies us of successful or failed authentication attempts. Under Keywords, we should see either Audit Success or Audit Failure. Error Code will also give us information about the authentication attempt. 
 
-# Get-WinEvent PowerShell cmdlet Cheat Sheet
-Where to Acquire
----------
-PowerShell is natively installed in Windows Vista and newer, and includes the Get-WinEvent cmdlet by default.
+|    ID              |    Description                                             |
+|--------------------|------------------------------------------------------------|
+|    Event ID 4776   |   A domain controller (DC) attempts to validate the credentials of an account using NTLM over Kerberos                  |
+  	
 
-Examples/Use Case
----------
-## Get-WinEvent
-View all events in the live system Event Log:
-```
-PS C:\> Get-WinEvent -LogName system
-```
+Other Event IDs specific to network shares are Event IDs 5140 and 5145. Note: In order to see these event logs, a policy setting mu be enabled. This setting is within the Advanced Audit Policy Configuration > Object Access > Audit File Share.
 
-View all events in the live security Event Log (requires administrator PowerShell):
+|    ID              |    Description                                             |
+|--------------------|------------------------------------------------------------|
+|    Event ID 5140   |   A network share object was accessed |
+|    Event ID 5145   |   A Network Share Object Was Checked To See Whether Client Can Be Granted Desired Access. |
+	
+## Hunting Lateral Movement
+When hunting for lateral movement, we’ll refer to research performed by the Japan Computer Emergency Response Team Coordination Center - the results of the research are available here. 
+- [Tool Analysis Result Sheet](https://jpcertcc.github.io/ToolAnalysisResultSheet/)
 
-```
-PS C:\> Get-WinEvent -LogName security
-```
-View all events in the file example.evtx, format list (fl) output:
-```
-PS C:\> Get-WinEvent -Path example.evtx | fl
-```
-View all events in example.evtx, format GridView output:
-```
-PS C:\> Get-WinEvent -Path example.evtx | Out-GridView
-```
-Perform long tail analysis of example.evtx:
-```
-PS C:\> Get-WinEvent -Path example.evtx | Group-Object id -NoElement | sort count
-```
-Pull events 7030 and 7045 from system.evtx:
-```
-PS C:\> Get-WinEvent -FilterHashtable @{Path="system.evtx"; ID=7030,7045}
-```
-Same as above, but use the live system event log:
-```
-PS C:\> Get-WinEvent -FilterHashtable @{logname="system"; id=7030,7045}
-```
-Search for events containing the string "USB" in the file system.evtx:
-```
-PS C:\> Get-WinEvent -FilterHashtable @{Path="system.evtx"} | Where {$_.Message -like "*USB*"}
-```
-'grep'-style search for lines of events containing the case insensitive string "USB" in the file system.evtx:
-```
-PS C:\> Get-WinEvent -FilterHashtable @{Path="system.evtx"} | fl | findstr /i USB
-```
-Pull all errors (level=2) from application.evtx:
-```
-PS C:\> Get-WinEvent -FilterHashtable @{Path="application.evtx"; level=2}
-```
-Pull all errors (level=2) from application.evtx and count the number of lines ('wc'-style):
-```
-PS C:\> Get-WinEvent -FilterHashtable @{Path="application.evtx"; level=2} | Measure-Object -Line
-```
+You can also check out resources from the Threat Hunting Project here, here
+- [Windows Lateral Movement via Explicit Credentials](https://github.com/ThreatHuntingProject/ThreatHunting/blob/master/hunts/lateral-movement-via-explicit-credentials.md)
+- [Detecting Lateral Movement in Windows Event Logs](https://github.com/ThreatHuntingProject/ThreatHunting/blob/master/hunts/lateral-movement-windows-authentication-logs.md )
+- [Lateral Movement Detection via Process Monitoring](https://github.com/ThreatHuntingProject/ThreatHunting/blob/master/hunts/lateral_movement_detection_via_process_monitoring.md) 
 
-### AppLocker
-Pull all AppLocker logs from the live AppLocker event log (requires Applocker):
-```
-PS C:\> Get-WinEvent -logname "Microsoft-Windows-AppLocker/EXE and DLL"
-```
-Search for live AppLocker EXE/MSI block events: "(EXE) was prevented from running":
-```
-PS C:\> Get-WinEvent -FilterHashtable @{logname="Microsoft-Windows-Applocker/EXE and DLL"; id=8004}
-```
-Search for live AppLocker EXE/MSI audit events: "(EXE) was allowed to run but would have been prevented from running if the AppLocker policy were enforced":
-```
-PS C:\> Get-WinEvent -FilterHashtable @{logname="Microsoft-Windows-Applocker/EXE and DLL"; id=8003}
-```
+## Windows Log Rotation & Clearing
+If event logs are not forwarded, then they are at risk of being cleared (deleted) or rotated from the endpoint device.
 
-### EMET
-Pull all EMET logs from the live Application Event log (requires EMET):
-```
-PS C:\> Get-WinEvent -FilterHashtable @{logname="application"; providername="EMET"}
- ```
-Pull all EMET logs from a saved Application Event log (requires EMET):
-```
-PS C:\> Get-WinEvent -FilterHashtable @{path="application.evtx"; providername="EMET"}
-```
+To clear event logs, administrative rights are needed. It is possible to clear the event logs without admin rights flooding the endpoint with events to generate logs that will rotate the logs that can be seen within tools such as Even Viewer
 
-### Sysmon
+Event IDs to hunt for regarding log clearing are Event IDs 1102 and 104.
+
+|    ID              |    Description                                             |
+|--------------------|------------------------------------------------------------|
+|    Event ID 1102   |   Windows Security audit log is cleared |
+|    Event ID 1104   |   The security Log is now full          |
+
+# Sysmon Event ID
+|     ID    |     Tag                       |     Event                                                 |
+|-----------|-------------------------------|-----------------------------------------------------------|
+|     1     |     ProcessCreate             |     Process   Create                                      |
+|     2     |     FileCreateTime            |     File   creation time                                  |
+|     3     |     NetworkConnect            |     Network   connection detected                         |
+|     4     |     n/a                       |     Sysmon   service state change (cannot be filtered)    |
+|     5     |     ProcessTerminate          |     Process   terminated                                  |
+|     6     |     DriverLoad                |     Driver   Loaded                                       |
+|     7     |     ImageLoad                 |     Image   loaded                                        |
+|     8     |     CreateRemoteThread        |     CreateRemoteThread   detected                         |
+|     9     |     RawAccessRead             |     RawAccessRead   detected                              |
+|     10    |     ProcessAccess             |     Process   accessed                                    |
+|     11    |     FileCreate                |     File   created                                        |
+|     12    |     RegistryEvent             |     Registry   object added or deleted                    |
+|     13    |     RegistryEvent             |     Registry   value set                                  |
+|     14    |     RegistryEvent             |     Registry   object renamed                             |
+|     15    |     FileCreateStreamHash      |     File   stream created                                 |
+|     16    |     n/a                       |     Sysmon   configuration change (cannot be filtered)    |
+|     17    |     PipeEvent                 |     Named   pipe created                                  |
+|     18    |     PipeEvent                 |     Named   pipe connected                                |
+|     19    |     WmiEvent                  |     WMI   filter                                          |
+|     20    |     WmiEvent                  |     WMI   consumer                                        |
+|     21    |     WmiEvent                  |     WMI   consumer filter                                 |
+|     22    |     DNSQuery                  |     DNS   query                                           |
+|     23    |     FileDelete                |     File   Delete archived                                |
+|     24    |     ClipboardChange           |     New   content in the clipboard                        |
+|     25    |     ProcessTampering          |     Process   image change                                |
+|     26    |     FileDeleteDetected        |     File   Delete logged                                  |
+|     27    |     FileBlockExecutable       |     File   Block Executable                               |
+|     28    |     FileBlockShredding        |     File   Block Shredding                                |
+|     29    |     FileExecutableDetected    |     File   Executable Detected                            |
+
+## Hunting in Sysmon
 Pull all Sysmon logs from the live Sysmon Event log (requires Sysmon and an admin PowerShell):
 ```
 PS C:\> Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational"
@@ -245,6 +239,20 @@ Pull Sysmon event ID 1 from the live Sysmon Event log
 ```
 PS C:\> Get-WinEvent -FilterHashtable @{logname="Microsoft-Windows-Sysmon/Operational"; id=1}
 ```
+Generic Hunting For Macros
+```
+Get-SysmonLogsProcessStarts | ? parentimage  -like '*winword*'
+Get-SysmonLogsProcessStarts | ? commandline -like '*shell*'
+Get-SysmonLogsProcessStarts 
+```
+Sysmon Event ID  10 - Process Access
+```
+get-winevent -FilterHashTable @{logname="'Microsoft-Windows-Sysmon/Operational"; id=10} | %{$_.Properties[0]} 
+get-winevent -FilterHashTable @{logname="'Microsoft-Windows-Sysmon/Operational"; id=10} | %{$_.Properties[4]}
+get-winevent -FilterHashTable @{logname="'Microsoft-Windows-Sysmon/Operational"; id=10} | %{$_.Properties[7]}
+get-winevent -FilterHashTable @{logname="'Microsoft-Windows-Sysmon/Operational"; id=10} | %{$_.Properties[9].Value}
+```
+
 #### Sysmon Event ID 1 - Process Creation
 ```
 Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=1} | Where-Object {$_.Properties[10].Value -ilike "*TARGET_COMMANDLINE*"} | fl
@@ -350,6 +358,85 @@ Message      : Registry value set:
                TargetObject: HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\Updating
                Details: WmiApRpl
                User: NT AUTHORITY\SYSTEM
+```
+
+# Get-WinEvent PowerShell cmdlet Cheat Sheet
+Where to Acquire
+---------
+PowerShell is natively installed in Windows Vista and newer, and includes the Get-WinEvent cmdlet by default.
+
+Examples/Use Case
+---------
+## Get-WinEvent
+View all events in the live system Event Log:
+```
+PS C:\> Get-WinEvent -LogName system
+```
+
+View all events in the live security Event Log (requires administrator PowerShell):
+
+```
+PS C:\> Get-WinEvent -LogName security
+```
+View all events in the file example.evtx, format list (fl) output:
+```
+PS C:\> Get-WinEvent -Path example.evtx | fl
+```
+View all events in example.evtx, format GridView output:
+```
+PS C:\> Get-WinEvent -Path example.evtx | Out-GridView
+```
+Perform long tail analysis of example.evtx:
+```
+PS C:\> Get-WinEvent -Path example.evtx | Group-Object id -NoElement | sort count
+```
+Pull events 7030 and 7045 from system.evtx:
+```
+PS C:\> Get-WinEvent -FilterHashtable @{Path="system.evtx"; ID=7030,7045}
+```
+Same as above, but use the live system event log:
+```
+PS C:\> Get-WinEvent -FilterHashtable @{logname="system"; id=7030,7045}
+```
+Search for events containing the string "USB" in the file system.evtx:
+```
+PS C:\> Get-WinEvent -FilterHashtable @{Path="system.evtx"} | Where {$_.Message -like "*USB*"}
+```
+'grep'-style search for lines of events containing the case insensitive string "USB" in the file system.evtx:
+```
+PS C:\> Get-WinEvent -FilterHashtable @{Path="system.evtx"} | fl | findstr /i USB
+```
+Pull all errors (level=2) from application.evtx:
+```
+PS C:\> Get-WinEvent -FilterHashtable @{Path="application.evtx"; level=2}
+```
+Pull all errors (level=2) from application.evtx and count the number of lines ('wc'-style):
+```
+PS C:\> Get-WinEvent -FilterHashtable @{Path="application.evtx"; level=2} | Measure-Object -Line
+```
+
+### AppLocker
+Pull all AppLocker logs from the live AppLocker event log (requires Applocker):
+```
+PS C:\> Get-WinEvent -logname "Microsoft-Windows-AppLocker/EXE and DLL"
+```
+Search for live AppLocker EXE/MSI block events: "(EXE) was prevented from running":
+```
+PS C:\> Get-WinEvent -FilterHashtable @{logname="Microsoft-Windows-Applocker/EXE and DLL"; id=8004}
+```
+Search for live AppLocker EXE/MSI audit events: "(EXE) was allowed to run but would have been prevented from running if the AppLocker policy were enforced":
+```
+PS C:\> Get-WinEvent -FilterHashtable @{logname="Microsoft-Windows-Applocker/EXE and DLL"; id=8003}
+```
+
+### EMET
+Pull all EMET logs from the live Application Event log (requires EMET):
+```
+PS C:\> Get-WinEvent -FilterHashtable @{logname="application"; providername="EMET"}
+ ```
+Pull all EMET logs from a saved Application Event log (requires EMET):
+```
+PS C:\> Get-WinEvent -FilterHashtable @{path="application.evtx"; providername="EMET"}
 ```
 
 ### Windows Defender
