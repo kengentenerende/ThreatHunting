@@ -1,5 +1,55 @@
 # THP Cheat Sheet Event IDs, Logging, and SIEMs
 
+# Windows Event Logs
+
+All Version of Windows maintain 3 core event logs:
+- Application
+- System
+- Security
+
+## Windows XP, Windows 2003, and any prior versions of Windows
+
+|    <br>Event Logs      |    <br>  Event Log Path                                |
+|------------------------|--------------------------------------------------------|
+|    <br>Application     |    <br>%SYSTEMROOT%\System32\Config\AppEvent.evt       |
+|    <br>System          |    <br>%SYSTEMROOT%\System32\Config\SysEvent.evt       |
+|    <br>Security        |    <br>%SYSTEMROOT%\System32\Config\SecEvent.evt       |
+
+## Latest Windows version (XML based)
+|    <br>Event Log      |    <br> Event Log Path                                           |
+|-----------------------|------------------------------------------------------------------|
+|    <br>Application    |    <br> %SYSTEMROOT%\System32\Winevt\Logs\Application.evtx       |
+|    <br>System         |    <br>%SYSTEMROOT%\System32\Winevt\Logs\System.evtx             |
+|    <br>Security       |    <br>%SYSTEMROOT%\System32\Winevt\Logs\Security.evtx           |
+
+## EVT & EVTX Comparison
+From Windows XP Old Event Id, add 4096 to convert it to Win 7/8/10 Event ID
+
+| Windows XP Old | Windows 7/8/10 | Description                                 |
+|----------------|----------------|---------------------------------------------|
+| 528            | 4624           | Successful Login                            |
+| 529            | 4625           | Failed Login Attempt                        |
+| 680            | 4776           | Successful Account Authentication           |
+| 624            | 4720           | Creating of a new user                      |
+| 636            | 4732           | A member has been added to a local group    |
+| 632            | 4728           | Membership has been added to a global group |
+| 2949           | 7045           | Service Creation                            |
+
+## Event Viewer
+You can access the Event Viewer by either double clicking the evtx file directly, by typing *eventvwr* in the Search box, or by navigating to:
+```
+ Control Panel > Administrative Tools > Event Viewer
+```
+
+Successful Account Authentication
+
+Creating of a new user
+
+A member has been added to a local group
+
+Membership has been added to a global group
+
+Service Creation
 # Hunting Suspicious Accounts
 
 Event IDs specific to account logon events
