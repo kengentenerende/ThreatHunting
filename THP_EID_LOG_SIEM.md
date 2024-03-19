@@ -130,7 +130,6 @@ PsExec using -l Option
 ```
 - (3) Network
 ```
-Guide-05/22 Gui
 Access or transfer files
 Native command line interaction - net.exe
 Interact with system services - sc.exe
@@ -278,7 +277,7 @@ Event ID 4697 (a service was installed in the system) is what we’ll be hunting
 |--------------------|------------------------------------------------------------|
 |    Event ID 4697   |   (a service was installed in the system)                  |
 
-### Hunting Network Shares
+## Hunting Network Shares
 
 Event ID 4776 is specific to the NTLM protocol and notifies us of successful or failed authentication attempts. Under Keywords, we should see either Audit Success or Audit Failure. Error Code will also give us information about the authentication attempt. 
 
