@@ -4,8 +4,17 @@
 
 All Version of Windows maintain 3 core event logs:
 - Application
+    - The application log contains events logged by applications or programs
+    - Program developers decide which events to log
+    - For example, a database program might record a file error in the application log
 - System
+    - The system log contains events logged by Windows system components
+    - For example, the failure of a driver or other system component to load during startup is recorded in the system log
+    - The event types logged by system components are predetermined by Windows
 - Security
+    - The security log contains events such as valid and invalid logon  attempts, as well as events related to resource use, such as creating, opening, or deleting files or other objects
+    - Administrators can specify what events are recorded in the security log
+    - For example, if you have enabled logon auditing, attempts to log on to the system are recorded in the security log
 
 ## Windows XP, Windows 2003, and any prior versions of Windows
 
@@ -83,6 +92,62 @@ You can access the Event Viewer by either double clicking the evtx file directly
 |    10             |    RemoteInteractive     |    A user logged onto   computer using Terminal Services or RDP.                                             |
 |    11             |    CachedInteractive     |    A user logged onto   computer using network credentials which were stored locally on the computer.        |
 
+### Account Creation Using Net Use
+- When hunting for suspicious account creation, we can look for Event ID 4720 (Account Created)
+- Adversaries with a sufficient level of access may create a local system, domain, or cloud tenant account. 
+- The *net user* commands can be used to create a local or domain account
+
+- Real world techniques
+- Account will be created via cmd, or PowerShell. Not via GUI!!!
+```
+net user ncsoc_adm1n1 123456/add
+```
+- Check if the user was successfully created
+```
+net user
+```
+- Once added, the account will immediately being added to administrator group to have a powerful access. 
+```
+net localgroup administrators ncsoc_adm1n1 /add
+```
+- Account name normally a common username on the environment to avoid being detected
+
+### Hunting Successful / Failed Logons
+
+**Event ID 4624**
+- After creating an account, attackers tends to log in immediately
+- Another piece of information to note regarding event IDs specific to accounts is the **Login ID**
+- We will know the duration of the session by the timestamps at logon and at logoff by looking at the logged field
+
+### Most Used Logon Types
+
+- (2) Interactive
+```
+Interactive
+Screen Sharing
+RunAs
+PsExec using -l Option
+```
+- (3) Network
+```
+Guide-05/22 Gui
+Access or transfer files
+Native command line interaction - net.exe
+Interact with system services - sc.exe
+Remote task scheduler - sctasks.exe / at.exe
+Remote PowerShell
+Remote WMI - wmic.exe
+```
+- (7) Unlock
+```
+Unlock established RDP Sessions
+```
+- (10) Remote Interactive
+```
+Remote Desktop Protocol / Terminal Services
+```
+
+
 ## Hunting Password Attacks
 Overall, looking for a rapid succession of failed attempts to the same machine, or multiple machines, repeatedly in a small amount of time with each attempt, may indicate Password Spraying/Guessing attack. 
 
@@ -92,6 +157,15 @@ Of course, we know the attacker can change the timing between each attempt to ma
 |----------------------------|-------------------------|
 |    Event ID 4625       |    failed logon     |
 |    Logon Type 3        |    network logon    |
+
+### Hunting Successful / Failed Logons
+
+**Event ID 4625**
+- An account failed to log on Windows keeps track of the account log on failed activities under event ID 4625
+- Good indicator of brute force attack or password spraying
+- Once attacker is performing brute force attack, they tend to get failed logons
+- Password Spray is one way to get into the systems using collected dumped credentials such as pastebin, darkweb, paid services, etc
+- We also need to look for a rapid succession of failed attempts to the same machine, or machines, repeatedly for a small space of time with each attempt
 
 
 ## Hunting Pass The Hash
@@ -128,6 +202,10 @@ If your network environment is accustomed to a lot of RDP connections into other
 |    Event IDs 4778  |    Terminal Services or RDP                             |
 |    Logon Type 10   |    Terminal Services or RDP                             |
 
+- To hunt for RDP sessions, look for port 3389
+- Make sure to know the legitimate RDP applications running in your environment
+- RMM Tools - Ghost, Anydesk, TeamViewer, VNC Connect, LogmeIn
+
 ## Hunting PsExec
 
 PsExec, part of the SysInternals Suite, is one of the common lateral movement tools, which provides the capability to execute remote commands. Due to the way that PsExec works, we can utilize the following Event IDs to hunt for it:
@@ -138,6 +216,33 @@ PsExec, part of the SysInternals Suite, is one of the common lateral movement to
 |    Event ID 5140        |    (share successfully accessed)                                       |
 |    Event ID 4697 / 7045 |    (service creation)                                                  |
 |    Event ID 4688        |    Sysmon EID 1                                                        |
+
+**Sample Use Cases / Rules**
+
+PsExec Service Start
+```
+(EventID:"4688" AND CommandLine:"C\:\\Windows\\PSEXESVC.exe")
+```
+PsExec Tool Execution
+```
+(EventID:"7045" AND ServiceName:"PSEXESVC" AND ServiceFileName:"*\\PSEXESVC.exe") OR (EventID:"7036" AND ServiceName:"PSEXESVC") OR (EventID:"1" AND Image:"*\\PSEXESVC.exe" AND User:"NT AUTHORITY\\SYSTEM")
+```
+
+### Alternative to PsExec
+[RemCom](https://github.com/kavika13/RemCom)
+- RemCom is an open-source, redistributable utility providing the same remote management functions
+
+[PAExec](https://github.com/poweradminllc/PAExec)
+- PAExec features all the same functions of RemCom and PsExec by default, PAExec
+uses a named pipe containing the string PAExec combined with a unique process 
+identifier and computer name values
+
+
+[CSExec](https://github.com/malcomvetter/CSExec)
+- CSExec is a highly configurable, C# implementation of PsExec’s functionality. By 
+default, CSExec sends csexecsvc.exe to the remote computer and uses a named pipe 
+called \\.\pipe\csexecsvc
+
 
 ## Hunting WMI Persistence
 Hunting WMI usage for persistence involves th a WMI subscription. Therefore, our goal is to search identify any newly registered subscriptions. One way to achieve this is by utilizing WMI itself for that activity.
@@ -151,6 +256,19 @@ Event ID 4698 (a scheduled task was created) is what we’ll hunt for. Also, Eve
 |    106             |    generated when a new task is created, but it does not necessarily mean that the task has been executed |
 |    200             |    action run - Windows Task Scheduler logs |
 |    201             |    action completed - Windows Task Scheduler logs |
+
+Automatically start a process at a certain time, either once or periodically Used by malware for
+- Persistence
+- Lateral Movement
+
+Configure event logging for scheduled task creation and changes by enabling the *Microsoft-Windows-TaskScheduler/Operational* setting within the event logging service Several events will then be logged on scheduled task activity, including:
+- Event ID *106* on Windows 7, Server 2008 R2 - Scheduled task registered
+- Event ID *140* on Windows 7, Server 2008 R2 / 4702 on Windows 10, Server 2016 - Scheduled task updated
+- Event ID *141* on Windows 7, Server 2008 R2 / 4699 on Windows 10, Server 2016 - Scheduled task deleted
+- Event ID *4698* on Windows 10, Server 2016 - Scheduled task created
+- Event ID *4699* on Windows 10, Server 2016 - Scheduled task deleted
+- Event ID *4700* on Windows 10, Server 2016 - Scheduled task enabled
+- Event ID *4701* on Windows 10, Server 2016 - Scheduled task disabled
 
 ## Hunting Service Creations
 
@@ -177,7 +295,32 @@ Other Event IDs specific to network shares are Event IDs 5140 and 5145. Note: In
 |    Event ID 5145   |   A Network Share Object Was Checked To See Whether Client Can Be Granted Desired Access. |
 	
 ## Hunting Lateral Movement
-When hunting for lateral movement, we’ll refer to research performed by the Japan Computer Emergency Response Team Coordination Center - the results of the research are available here. 
+
+Attackers rarely reach the goal data from the first host
+- Must pivot through the environment to gather access
+- Requires both access to host and program to run
+- Host access through exploit, legitimate credentials
+- Code access via staging malware locally or on network
+Many remote administration protocol choices
+- CLI- SSH, SMB w/PSExec, PowerShell Remoting, WMI
+- GUI –RDP. VNS, X11 Forwarding
+
+**Detection**
+- 4624 Logons
+- 4720 Account Creation
+- 4776 Local account auth
+- 4672 Privileged Account Usage
+
+**Windows Logins: Event ID 4648**
+Run as style logins:
+- Like *sudo* for Windows
+- User X becoming account Y
+- Used by attackers for pivoting through network
+- Tells you who (*subject*)
+- Which account they used
+- Where it was used (*Target*)
+
+When hunting for lateral movement, we'll refer to research performed by the Japan Computer Emergency Response Team Coordination Center - the results of the research are available here. 
 - [Tool Analysis Result Sheet](https://jpcertcc.github.io/ToolAnalysisResultSheet/)
 
 You can also check out resources from the Threat Hunting Project here, here
