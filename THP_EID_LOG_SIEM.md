@@ -9,18 +9,18 @@ All Version of Windows maintain 3 core event logs:
 
 ## Windows XP, Windows 2003, and any prior versions of Windows
 
-|    <br>Event Logs      |    <br>  Event Log Path                                |
+|    Event Logs      |      Event Log Path                                |
 |------------------------|--------------------------------------------------------|
-|    <br>Application     |    <br>%SYSTEMROOT%\System32\Config\AppEvent.evt       |
-|    <br>System          |    <br>%SYSTEMROOT%\System32\Config\SysEvent.evt       |
-|    <br>Security        |    <br>%SYSTEMROOT%\System32\Config\SecEvent.evt       |
+|    Application     |    %SYSTEMROOT%\System32\Config\AppEvent.evt       |
+|    System          |    %SYSTEMROOT%\System32\Config\SysEvent.evt       |
+|    Security        |    %SYSTEMROOT%\System32\Config\SecEvent.evt       |
 
 ## Latest Windows version (XML based)
-|    <br>Event Log      |    <br> Event Log Path                                           |
+|    Event Log      |     Event Log Path                                           |
 |-----------------------|------------------------------------------------------------------|
-|    <br>Application    |    <br> %SYSTEMROOT%\System32\Winevt\Logs\Application.evtx       |
-|    <br>System         |    <br>%SYSTEMROOT%\System32\Winevt\Logs\System.evtx             |
-|    <br>Security       |    <br>%SYSTEMROOT%\System32\Winevt\Logs\Security.evtx           |
+|    Application    |     %SYSTEMROOT%\System32\Winevt\Logs\Application.evtx       |
+|    System         |    %SYSTEMROOT%\System32\Winevt\Logs\System.evtx             |
+|    Security       |    %SYSTEMROOT%\System32\Winevt\Logs\Security.evtx           |
 
 ## EVT & EVTX Comparison
 From Windows XP Old Event ID, add 4096 to convert it to Win 7/8/10 Event ID
@@ -71,27 +71,27 @@ You can access the Event Viewer by either double clicking the evtx file directly
 
 ### Logon Types
 
-|    <br>Logon Type     |    <br>Logon Title           |    <br>Description                                                                                               |
+|    Logon Type     |    Logon Title           |    Description                                                                                               |
 |-----------------------|------------------------------|------------------------------------------------------------------------------------------------------------------|
-|    <br>2              |    <br>Interactive           |    <br>A user physically   logged onto this computer                                                             |
-|    <br>3              |    <br>Network               |    <br>A user or computer   logged on from the network.                                                          |
-|    <br>4              |    <br>Batch                 |    <br>Used by batch   servers where processes may be executing on behalf of a user, like scheduled   tasks.     |
-|    <br>5              |    <br>Service               |    <br>A service started   by the Service Control Manager.                                                       |
-|    <br>7              |    <br>Unlock                |    <br>The workstation   was unlocked.                                                                           |
-|    <br>8              |    <br>NetworkClear text     |    <br>Network   credentials sent in cleartext                                                                   |
-|    <br>9              |    <br>NewCredentials        |    <br>A caller cloned   its current token and specified new credentials (runas command).                        |
-|    <br>10             |    <br>RemoteInteractive     |    <br>A user logged onto   computer using Terminal Services or RDP.                                             |
-|    <br>11             |    <br>CachedInteractive     |    <br>A user logged onto   computer using network credentials which were stored locally on the computer.        |
+|    2              |    Interactive           |    A user physically   logged onto this computer                                                             |
+|    3              |    Network               |    A user or computer   logged on from the network.                                                          |
+|    4              |    Batch                 |    Used by batch   servers where processes may be executing on behalf of a user, like scheduled   tasks.     |
+|    5              |    Service               |    A service started   by the Service Control Manager.                                                       |
+|    7              |    Unlock                |    The workstation   was unlocked.                                                                           |
+|    8              |    NetworkClear text     |    Network   credentials sent in cleartext                                                                   |
+|    9              |    NewCredentials        |    A caller cloned   its current token and specified new credentials (runas command).                        |
+|    10             |    RemoteInteractive     |    A user logged onto   computer using Terminal Services or RDP.                                             |
+|    11             |    CachedInteractive     |    A user logged onto   computer using network credentials which were stored locally on the computer.        |
 
 ## Hunting Password Attacks
 Overall, looking for a rapid succession of failed attempts to the same machine, or multiple machines, repeatedly in a small amount of time with each attempt, may indicate Password Spraying/Guessing attack. 
 
 Of course, we know the attacker can change the timing between each attempt to make it look less suspicious. 
 
-|    <br>ID                  |    <br>Description      |
+|    ID                  |    Description      |
 |----------------------------|-------------------------|
-|    <br>Event ID 4625       |    <br>failed logon     |
-|    <br>Logon Type 3        |    <br>network logon    |
+|    Event ID 4625       |    failed logon     |
+|    Logon Type 3        |    network logon    |
 
 
 ## Hunting Pass The Hash
@@ -99,10 +99,10 @@ We should also look for the Logon Process to be NtLmSsP and the key length to be
 You can read more about this technique, here:
 [How to Detect Pass-the-Hash Attacks](https://blog.netwrix.com/2021/11/30/how-to-detect-pass-the-hash-attacks/)
 
-|    <br>ID                  |    <br>Description                               |
+|    ID                  |    Description                               |
 |----------------------------|--------------------------------------------------|
-|    <br>Event ID 4624       |    <br>An account was successfully logged on     |
-|    <br>Logon Type 3        |    <br>network logon                             |
+|    Event ID 4624       |    An account was successfully logged on     |
+|    Logon Type 3        |    network logon                             |
 
 
 ## Hunting Golden Tickets
@@ -112,32 +112,32 @@ Oftentimes, attackers leverage native Kerberos functionality. For example, this 
 - [Event-4768](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4768)
 - [Detecting Lateral Movements in Windows Infrastructure](https://cert.europa.eu/static/WhitePapers/CERT-EU_SWP_17-002_Lateral_Movements.pdf)
 
-|    <br>ID              |    <br>Description                                             |
+|    ID              |    Description                                             |
 |------------------------|----------------------------------------------------------------|
-|    <br>Event ID        |    <br>4768                                                    |
-|    <br>Category        |    <br>Account Logon                                           |
-|    <br>Sub category    |    <br>Kerberos Authentication Service                         |
-|    <br>Description     |    <br>A Kerberos authentication ticket (TGT) was requested    |
+|    Event ID        |    4768                                                    |
+|    Category        |    Account Logon                                           |
+|    Sub category    |    Kerberos Authentication Service                         |
+|    Description     |    A Kerberos authentication ticket (TGT) was requested    |
 
 ## Hunting RDP Sessions
 If your network environment is accustomed to a lot of RDP connections into other machines, then this can be difficult to hunt for. When hunting for RDP sessions, we’re looking for Event IDs 4624 & 4778 with Logon Type 10 (Terminal Services or RDP). Also, note the expected Event IDs after successful or failed authentication attempts. 
 
-|    <br>ID              |    <br>Description                                          |
+|    ID              |    Description                                          |
 |------------------------|-------------------------------------------------------------|
-|    <br>Event IDs 4624  |    <br>Account Logon An account was successfully logged on. |
-|    <br>Event IDs 4778  |    <br>Terminal Services or RDP                             |
-|    <br>Logon Type 10   |    <br>Terminal Services or RDP                             |
+|    Event IDs 4624  |    Account Logon An account was successfully logged on. |
+|    Event IDs 4778  |    Terminal Services or RDP                             |
+|    Logon Type 10   |    Terminal Services or RDP                             |
 
 ## Hunting PsExec
 
 PsExec, part of the SysInternals Suite, is one of the common lateral movement tools, which provides the capability to execute remote commands. Due to the way that PsExec works, we can utilize the following Event IDs to hunt for it:
 
-|    <br>ID                   |    <br>Description                                             |
+|    ID                   |    Description                                             |
 |-----------------------------|----------------------------------------------------------------|
-|    <br>Event ID 5145        |    <br>(captures requests to shares, we are interested in ADMIN$ and IPC$) |
-|    <br>Event ID 5140        |    <br>(share successfully accessed)                                       |
-|    <br>Event ID 4697 / 7045 |    <br>(service creation)                                                  |
-|    <br>Event ID 4688        |    <br>Sysmon EID 1                                                        |
+|    Event ID 5145        |    (captures requests to shares, we are interested in ADMIN$ and IPC$) |
+|    Event ID 5140        |    (share successfully accessed)                                       |
+|    Event ID 4697 / 7045 |    (service creation)                                                  |
+|    Event ID 4688        |    Sysmon EID 1                                                        |
 
 ## Hunting WMI Persistence
 Hunting WMI usage for persistence involves th a WMI subscription. Therefore, our goal is to search identify any newly registered subscriptions. One way to achieve this is by utilizing WMI itself for that activity.
@@ -145,12 +145,12 @@ Hunting WMI usage for persistence involves th a WMI subscription. Therefore, our
 ## Hunting Scheduled Tasks
 Event ID 4698 (a scheduled task was created) is what we’ll hunt for. Also, Event IDs 106, 200, and 201 all relate to scheduled tasks. Here is an example log entry. 
 
-|    <br>ID              |    <br>Description                                          |
+|    ID              |    Description                                          |
 |------------------------|-------------------------------------------------------------|
-|    <br>Event IDs 4698  |    <br>(a scheduled task was created) |
-|    <br>106             |    <br>generated when a new task is created, but it does not necessarily mean that the task has been executed |
-|    <br>200             |    <br>action run - Windows Task Scheduler logs |
-|    <br>201             |    <br>action completed - Windows Task Scheduler logs |
+|    Event IDs 4698  |    (a scheduled task was created) |
+|    106             |    generated when a new task is created, but it does not necessarily mean that the task has been executed |
+|    200             |    action run - Windows Task Scheduler logs |
+|    201             |    action completed - Windows Task Scheduler logs |
 
 
 
