@@ -806,15 +806,6 @@ It detected an NBNS response from the IP address at 10.100.11.102 for a random h
     This command will attempt to scan each host in the 10.0.0.0/16 subnet to determine if an NBNS spoofer is present and will log each event to the Windows Event Log. Additionally, for each detected NBNS spoofer a set of honey credentials will be sent to the listener over SMB. #### Be sure to set the user/pass combination in the "Honey Token Seed" section below.####
 ```
 
-## PowerShellDefense - Find-MaliciousAccount
-
-The purpose of the [Find-MaliciousAccount](https://github.com/Ben0xA/PowerShellDefense/blob/master/Find-MaliciousAccount.ps1) function in the provided PowerShell script is to continuously monitor the Security event log for potential malicious logon attempts associated with a specific user account. It achieves this by searching for events with **Event ID 4648** (which typically indicates a logon attempt) and matching the specified account name within those events.
-
-```powershell
-PS > Import-Module .\Find-MaliciousAccount.ps1
-PS > Find-MaliciousAccount "TargetAccountName"
-```
-
 ## PowerShellDefense - Invoke-HoneyCreds
 
 This PowerShell function [Invoke-HoneyCreds](https://github.com/Ben0xA/PowerShellDefense/blob/master/Invoke-HoneyCreds.ps1) is designed to simulate a scenario where a compromised user's credentials are used to attempt unauthorized access to network resources.
@@ -824,4 +815,87 @@ PS > Import-Module .\Invoke-HoneyCreds.ps1
 PS > Invoke-HoneyCreds 
 
 **NOTE**: Get Credentials. Use DOMAIN\User for username. The Account Domain should match the target.
+```
+
+## PowerShellDefense - Find-MaliciousAccount
+
+The purpose of the [Find-MaliciousAccount](https://github.com/Ben0xA/PowerShellDefense/blob/master/Find-MaliciousAccount.ps1) function in the provided PowerShell script is to continuously monitor the Security event log for potential malicious logon attempts associated with a specific user account. It achieves this by searching for events with **Event ID 4648** (which typically indicates a logon attempt) and matching the specified account name within those events.
+
+```powershell
+PS > Import-Module .\Find-MaliciousAccount.ps1
+PS > Find-MaliciousAccount "TargetAccountName"
+```
+
+
+## Detect Responder with Sysmon
+
+[Get-WinEventData](https://github.com/RamblingCookieMonster/PowerShell/blob/master/Get-WinEventData.ps1)
+```powershell
+.SYNOPSIS
+    Get custom event data from an event log record
+
+.DESCRIPTION
+    Get custom event data from an event log record
+
+    Takes in Event Log entries from Get-WinEvent, converts each to XML, extracts all properties from Event.EventData.Data
+
+    Notes:
+        To avoid overwriting existing properties or skipping event data properties, we append 'EventData' to these extracted properties
+        Some events store custom data in other XML nodes.  For example, AppLocker uses Event.UserData.RuleAndFileData
+
+.PARAMETER Event
+    One or more event.
+    
+    Accepts data from Get-WinEvent or any System.Diagnostics.Eventing.Reader.EventLogRecord object
+
+.INPUTS
+    System.Diagnostics.Eventing.Reader.EventLogRecord
+
+.OUTPUTS
+    System.Diagnostics.Eventing.Reader.EventLogRecord
+
+.EXAMPLE
+    Get-WinEvent -LogName system -max 1 | Get-WinEventData | Select -Property MachineName, TimeCreated, EventData*
+
+    #  Simple example showing the computer an event was generated on, the time, and any custom event data
+
+.EXAMPLE
+    Get-WinEvent -ComputerName DomainController1 -FilterHashtable @{Logname='security';id=4740} -MaxEvents 10 | Get-WinEventData | Select TimeCreated, EventDataTargetUserName, EventDataTargetDomainName
+
+    #  Find lockout events on a domain controller
+    #    ideally you have log forwarding, audit collection services, or a product from a t-shirt company for this...
+
+.NOTES
+    Concept and most code borrowed from Ashley McGlone
+        http://blogs.technet.com/b/ashleymcglone/archive/2013/08/28/powershell-get-winevent-xml-madness-getting-details-from-event-logs.aspx
+
+.FUNCTIONALITY
+    Computers
+#>
+
+```
+
+[(Attempting) to Detect Responder with Sysmon](https://haveyousecured.blogspot.com/2016/12/attempting-to-detect-responder-with.html)
+
+```powershell
+#credits to haveyousecured.blogspot.gr
+Import-Module .\Get-WinEventData.ps1
+
+Set-Location \\nonexisting\sharenotthere -ErrorAction SilentlyContinue
+
+$EventsID3 = Get-WinEvent -FilterHashtable @{logname="Microsoft-Windows-Sysmon/Operational";ID=3} | Get-WinEventData | select EventDataDestinationPort, EventDataDestinationIp
+
+foreach($Event3 in $EventsID3){
+
+    if(($Event3.EventDataDestinationPort -eq 445) -and ($Event3.EventDataDestinationIp -notcontains "10.100.10.253")){
+
+        Write-Host "SMB Response Sent to Untrusted": $Event3.EventDataDestinationIp + $Event3.EventDataDestinationPort 
+
+    }
+
+}
+```
+
+```powershell
+Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=3} | Where-Object{$_.Properties[16].Value -ilike '445' -and $_.Properties[14].Value -notcontains "10.100.10.253"} | Format-List
 ```
