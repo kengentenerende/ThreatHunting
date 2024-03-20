@@ -758,7 +758,8 @@ Event Viewer > Windows Logs > Application > **Event ID 8415**.
     If the HoneyTokenSeed option is set ResponderGuard will submit a set of honey token credentials to a detected NBNS spoofer over SMB. #### Be sure to set the user/pass combination in the "Honey Token Seed" section below. #####
     #>
 ```
-```ps
+
+```powershell
   .EXAMPLE
 
     C:\PS> Invoke-ResponderGuard -CidrRange 10.100.11.0/24 -LoggingEnabled -HoneyTokenSeed
@@ -783,8 +784,9 @@ PS > Invoke-ResponderGuard -CidrRange 10.100.11.0/24 -LoggingEnabled -HoneyToken
 
 It detected an NBNS response from the IP address at 10.100.11.102 for a random hostname. An event was written to the event log and then a set of honey credentials (INE\HoneyUser : NotARealPassword!) were submitted over SMB to the listener.
 
-```    
-```ps
+```   
+
+```powershell
   .EXAMPLE
 
     C:\PS> Invoke-ResponderGuard -CidrList C:\temp\cidr-list.txt
@@ -793,7 +795,8 @@ It detected an NBNS response from the IP address at 10.100.11.102 for a random h
     -----------
     This command will import the list of CIDR network ranges from the file at C:\temp\cidr-list.txt and attempt to scan each host to determine if an NBNS spoofer is present.
 ```
-```
+
+```powershell
   .EXAMPLE
 
     C:\PS> Invoke-ResponderGuard -CidrRange 10.0.0.0/16 -LoggingEnabled -HoneyTokenSeed
@@ -807,15 +810,16 @@ It detected an NBNS response from the IP address at 10.100.11.102 for a random h
 
 The purpose of the [Find-MaliciousAccount](https://github.com/Ben0xA/PowerShellDefense/blob/master/Find-MaliciousAccount.ps1) function in the provided PowerShell script is to continuously monitor the Security event log for potential malicious logon attempts associated with a specific user account. It achieves this by searching for events with **Event ID 4648** (which typically indicates a logon attempt) and matching the specified account name within those events.
 
-```ps
+```powershell
 PS > Import-Module .\Find-MaliciousAccount.ps1
 PS > Find-MaliciousAccount "TargetAccountName"
 ```
+
 ## PowerShellDefense - Invoke-HoneyCreds
 
 This PowerShell function [Invoke-HoneyCreds](https://github.com/Ben0xA/PowerShellDefense/blob/master/Invoke-HoneyCreds.ps1) is designed to simulate a scenario where a compromised user's credentials are used to attempt unauthorized access to network resources.
 
-```ps
+```powershell
 PS > Import-Module .\Invoke-HoneyCreds.ps1
 PS > Invoke-HoneyCreds 
 
