@@ -720,7 +720,8 @@ To assist with alerting for this activity, ResponderGuard writes a Windows event
 Event Viewer > Windows Logs > Application > **Event ID 8415**.
 ```
 **Usage**
-```ps
+
+```powershell
 <#
   .SYNOPSIS
 
