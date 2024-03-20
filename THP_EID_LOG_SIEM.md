@@ -398,10 +398,29 @@ get-winevent -FilterHashTable @{logname="'Microsoft-Windows-Sysmon/Operational";
 #### Sysmon Event ID 1 - Process Creation
 ```
 Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=1} | Where-Object {$_.Properties[10].Value -ilike "*TARGET_COMMANDLINE*"} | fl
-```
-```
- Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=1} | ? {$_
-.Properties[21].Value -ilike "*TARGET_PARENTCOMMANDLINE*"} | fl
+
+1   RuleName
+2   UtcTime
+3   ProcessGuid
+4   ProcessId
+5   Image
+6   FileVersion
+7   Description
+8   Product
+9   Company
+10  OriginalFileName
+11  CommandLine
+12  User
+13  LogonGuid
+14  LogonId
+15  TerminalSessionId
+17  IntegrityLevel
+18  Hashes
+19  ParentProcessGuid
+20  ParentProcessId
+21  ParentImage
+22  ParentCommandLine
+23  ParentUser
 ```
 
 ```
@@ -686,3 +705,118 @@ As hunters, our focus is therefore any registry additions or modifications of CL
 References:
 - [ABUSING THE COM REGISTRY STRUCTURE: CLSID, LOCALSERVER32, & INPROCSERVER32](https://bohops.com/2018/06/28/abusing-com-registry-structure-clsid-localserver32-inprocserver32/)
 - [ABUSING THE COM REGISTRY STRUCTURE (PART 2): HIJACKING & LOADING TECHNIQUES](https://bohops.com/2018/08/18/abusing-the-com-registry-structure-part-2-loading-techniques-for-evasion-and-persistence/)
+
+# Hunting Responder
+
+[The CredDefense Toolkit](https://www.blackhillsinfosec.com/the-creddefense-toolkit/) – to have a free way to detect and prevent credential abuse attacks.
+
+## CredDefense - ResponderGuard
+One of the common attacks we as pentesters perform is to attempt NBNS (*NetBIOS Name Service*) or LLMNR (*Link-Local Multicast Name Resolution*) spoofing attacks on a network in hopes of gaining hashed credentials of users. One popular tool for performing this attack is called *Responder* written by Laurent Gaffie. 
+
+[ResponderGuard.ps1](https://github.com/CredDefense/CredDefense/blob/master/scripts/ResponderGuard.ps1) is a PowerShell tool that should allow for the detection of Responder-like activity on a larger scale across networks. It has the ability to locate Responder listeners on foreign subnets by sending targeted NBNS requests to every host in a list of CIDR ranges. With each NBNS request, a random hostname is requested for each IP address. If a host responds that it is the correct host then it is likely that host is an NBNS spoofer.
+
+To assist with alerting for this activity, ResponderGuard writes a Windows event log immediately upon detecting a Responder-like listener on the network. This can be utilized in association with CredDefense or any SIEM of your choice to alert you whenever a Responder-like system is discovered. Just look for 
+```
+Event Viewer > Windows Logs > Application > **Event ID 8415**.
+```
+**Usage**
+```ps
+<#
+  .SYNOPSIS
+
+    This function attempts to locate NBNS spoofers on a network by sending NBNS requests using fake hostnames to specified hosts.
+
+    ResponderGuard Function: Invoke-ResponderGuard
+    Author: Beau Bullock (@dafthack)
+    License: MIT License
+    Required Dependencies: None
+    Optional Dependencies: None
+
+  .DESCRIPTION
+
+    This function attempts to locate NBNS spoofers on a network by sending NBNS requests using fake hostnames to specified hosts.
+    
+  .PARAMETER SingleIP
+
+    A single IP address to scan for NBNS spoofing
+    
+  .PARAMETER CidrRange
+
+    A CIDR range such as 192.168.1.0/24
+
+  .PARAMETER CidrList
+
+    A list of CIDR ranges 1 per line to scan for NBNS spoofing
+    
+  .PARAMETER LoggingEnabled
+
+    If the LoggingEnabled option is set a Windows Event log will be created for each potential NBNS spoofer found. The default EventID is 8415.
+
+  .PARAMETER HoneyTokenSeed
+
+    If the HoneyTokenSeed option is set ResponderGuard will submit a set of honey token credentials to a detected NBNS spoofer over SMB. #### Be sure to set the user/pass combination in the "Honey Token Seed" section below. #####
+    #>
+```
+```ps
+  .EXAMPLE
+
+    C:\PS> Invoke-ResponderGuard -CidrRange 10.100.11.0/24 -LoggingEnabled -HoneyTokenSeed
+
+    Description
+    -----------
+    This command will attempt to scan each host in the 10.100.11.0/24 subnet to determine if an NBNS spoofer is present and will log each event to the Windows Event Log. 
+    **NOTE**: Run ipconfig and check for default gateway.
+    
+PS > Import-Module .\ResponderGuard.ps1
+PS > Invoke-ResponderGuard -CidrRange 10.100.11.0/24 -LoggingEnabled -HoneyTokenSeed
+[*] Setting up event logging.
+[*] EventLog source ResponderGuard already exists.
+[*] Now creating a list of IP addresses from the 10.100.11.0/24 network range.
+[*] A list of 255 addresses was created.
+[*] ResponderGuard received an NBNS response from the host at 10.100.11.102 for the hostname WRBMIZTDSA!
+[*] An event was written to the Windows Event log.
+[*] Submitting Honey Token Creds INE\HoneyUser : NotARealPassword! to \\10.100.11.102\c$!
+[*] ResponderGuard received an NBNS response from the host at 10.100.11.102 for the hostname FVJAMPKUYL!
+[*] An event was written to the Windows Event log.
+[*] Submitting Honey Token Creds INE\HoneyUser : NotARealPassword! to \\10.100.11.102\c$!
+
+It detected an NBNS response from the IP address at 10.100.11.102 for a random hostname. An event was written to the event log and then a set of honey credentials (INE\HoneyUser : NotARealPassword!) were submitted over SMB to the listener.
+
+```    
+```ps
+  .EXAMPLE
+
+    C:\PS> Invoke-ResponderGuard -CidrList C:\temp\cidr-list.txt
+
+    Description
+    -----------
+    This command will import the list of CIDR network ranges from the file at C:\temp\cidr-list.txt and attempt to scan each host to determine if an NBNS spoofer is present.
+```
+```
+  .EXAMPLE
+
+    C:\PS> Invoke-ResponderGuard -CidrRange 10.0.0.0/16 -LoggingEnabled -HoneyTokenSeed
+
+    Description
+    -----------
+    This command will attempt to scan each host in the 10.0.0.0/16 subnet to determine if an NBNS spoofer is present and will log each event to the Windows Event Log. Additionally, for each detected NBNS spoofer a set of honey credentials will be sent to the listener over SMB. #### Be sure to set the user/pass combination in the "Honey Token Seed" section below.####
+```
+
+## PowerShellDefense - Find-MaliciousAccount
+
+The purpose of the [Find-MaliciousAccount](https://github.com/Ben0xA/PowerShellDefense/blob/master/Find-MaliciousAccount.ps1) function in the provided PowerShell script is to continuously monitor the Security event log for potential malicious logon attempts associated with a specific user account. It achieves this by searching for events with **Event ID 4648** (which typically indicates a logon attempt) and matching the specified account name within those events.
+
+```ps
+PS > Import-Module .\Find-MaliciousAccount.ps1
+PS > Find-MaliciousAccount "TargetAccountName"
+```
+## PowerShellDefense - Invoke-HoneyCreds
+
+This PowerShell function [Invoke-HoneyCreds](https://github.com/Ben0xA/PowerShellDefense/blob/master/Invoke-HoneyCreds.ps1) is designed to simulate a scenario where a compromised user's credentials are used to attempt unauthorized access to network resources.
+
+```ps
+PS > Import-Module .\Invoke-HoneyCreds.ps1
+PS > Invoke-HoneyCreds 
+
+**NOTE**: Get Credentials. Use DOMAIN\User for username. The Account Domain should match the target.
+```
