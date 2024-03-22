@@ -676,25 +676,6 @@ Many of the PowerShell tools are being rewritten in .NET instead, in an attempt 
 
 - [Hunting For In- Memory .NET Attacks](https://www.elastic.co/security-labs/hunting-memory-net-attacks)
 
-### .NET Tools
-The enormous abuse of PowerShell resulted in close monitoring by defenders and EDR solutions, which are able to (often) detect and block even obfuscated commands. 
-- [GhostPack](https://github.com/GhostPack)
-- [Rubeus](https://github.com/GhostPack/Rubeus)
-- [SharpView](https://github.com/tevora-threat/SharpView)
-- [SharpHound](https://github.com/BloodHoundAD/SharpHound)
-
-Hunting for the usage of .NET tools like Rubeus, combined with injection techniques such as Cobalt Strike's *execute-assembly* has proven to be a challenge task because: 
-• Reflective Injection is used, so nothing is stored on disk 
-• After execution, the memory region is cleared and there are very little traces of injection and/or what was injected (even in memory!).
-
-
-### Event Tracing for Windows & SilkETW 
-In Windows, there is a kernel-level tracing facility, which logs kernel and/or application level events to a log file known as **Event Tracing for Windows** (ETW). Although less well known, perhaps due to its complexity and the mass of events generated, it can provide valuable data for a threat hunter. **FuzzySec** released SilkETW to help deal with the complexity of setting up ETW.
-
-- [Detecting Malicious Use of .NET](https://blog.f-secure.com/detecting-malicious-use-of-net-part-1/)
-- [SilkETW & SilkService](https://github.com/mandiant/SilkETW)
-- [Threat Hunting with ETW events and HELK](https://medium.com/threat-hunters-forge/threat-hunting-with-etw-events-and-helk-part-1-installing-silketw-6eb74815e4a0)
-
 ## AMSI
 
 Essentially, AMSI provides insight into in-memory buffers, allowing AV software to analyze a de-obfuscated script, as opposed to a heavily obfuscated one stored in a file on disk. AMSI makes the execution of malicious scripts significantly more difficult. 
@@ -1007,4 +988,208 @@ C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Msbuild.exe
 C:\Program Files (x86)\MSBuild\14.0\bin\MSBuild.exe
 ```
 
+## Hunting in Sysmon using Powershell
+
 Refer to [Hunting in Sysmon](https://github.com/kengentenerende/ThreatHunting/blob/master/THP_EID_LOG_SIEM.md#hunting-in-sysmon)
+
+## Event Tracing for Windows & SilkETW 
+In Windows, there is a kernel-level tracing facility, which logs kernel and/or application level events to a log file known as **Event Tracing for Windows** (ETW). Although less well known, perhaps due to its complexity and the mass of events generated, it can provide valuable data for a threat hunter. **FuzzySec** released SilkETW to help deal with the complexity of setting up ETW.
+
+- [Detecting Malicious Use of .NET](https://blog.f-secure.com/detecting-malicious-use-of-net-part-1/)
+- [SilkETW & SilkService](https://github.com/mandiant/SilkETW)
+- [Threat Hunting with ETW events and HELK — Part 1: Installing SilkETW](https://medium.com/threat-hunters-forge/threat-hunting-with-etw-events-and-helk-part-1-installing-silketw-6eb74815e4a0)
+- [Threat Hunting with ETW events and HELK — Part 2: Shipping ETW events to HELK](https://medium.com/threat-hunters-forge/threat-hunting-with-etw-events-and-helk-part-2-shipping-etw-events-to-helk-16837116d2f5)
+- [Hunting for Suspicious LDAP Activity with SilkETW and Yara](https://riccardoancarani.github.io/2019-10-19-hunting-for-domain-enumeration/)
+- [Events from all manifest-based and mof-based ETW providers across Windows 10 versions](https://github.com/jdu2600/Windows10EtwEvents)
+
+SilkService-Log - **Event ID 3**
+
+```
+Event Viewer > Applications and Services Logs > SilkService-Log.
+```
+
+Hunting **SilkService Collector Logs** using Powershell
+```
+PS > (Get-WinEvent -FilterHashtable @{LogName="SilkService-Log"; ID=3}).Message | ConvertFrom-Json | Where-Object { $_.ProcessName -like '*TARGET_PROCESSNAME*' } | fl > output.txt
+```
+```
+PS > (Get-WinEvent -FilterHashtable @{LogName="SilkService-Log"; ID=3}).Message | ConvertFrom-Json | Where-Object { $_.XmlEventData -like '*seatbelt*' } | fl > output.txt
+
+```
+**This will save ASCII String of Target File**
+```
+[System.IO.File]::ReadAllText("C:\Users\admin\AppData\Local\Temp\451tvfu2.dll") -replace '[^\x20-\x7E]', "`n" | Out-File -FilePath "output.txt" -Encoding ASCII
+```
+
+The provider that we are interested in for this example is **MicrosoftWindows-DotNETRuntime.** To the left is the utilized SilkService configuration
+
+```
+Sample Logs:
+ProviderGuid    : e13c0d23-ccbc-4e12-931b-d9cc2eee27e4
+YaraMatch       : {}
+ProviderName    : Microsoft-Windows-DotNETRuntime
+EventName       : Method/LoadVerbose
+Opcode          : 37
+OpcodeName      : LoadVerbose
+TimeStamp       : 2022-07-06T06:21:17.8102933+00:00
+ThreadID        : 2824
+ProcessID       : 5768
+ProcessName     : Windows_Reporting
+PointerSize     : 8
+EventDataLength : 94
+XmlEventData    : @{ModuleID=140,729,209,892,600; PID=5768; ClrInstanceID=6; MethodSignature=void  (); 
+                  MethodID=140,729,209,987,656; MethodFlags=Jitted; MethodToken=100,663,348; 
+                  FormattedMessage=MethodID=140,729,209,987,656;
+                  ModuleID=140,729,209,892,600;
+                  MethodStartAddress=140,729,208,316,912;
+                  MethodSize=200;
+                  MethodToken=100,663,348;
+                  MethodFlags=Jitted;
+                  MethodNamespace=SeatBelt;
+                  MethodName=PrintLogo;
+                  MethodSignature=void  ();
+                  ClrInstanceID=6 ; MSec=2747882.4513; MethodNamespace=SeatBelt; 
+                  MethodStartAddress=140,729,208,316,912; TID=2824; MethodSize=200; 
+                  ProviderName=Microsoft-Windows-DotNETRuntime; PName=; MethodName=PrintLogo; 
+                  EventName=Method/LoadVerbose}
+
+```
+**Indicators of compromise**
+- MethodNamespace
+- ManagedInteropMethodNamespace
+
+**Reference**: [GhostPack/Seatbelt](https://github.com/GhostPack/Seatbelt) - **Seatbelt** is a C# project that performs a number of security oriented host-survey "safety checks" relevant from both offensive and defensive security perspectives.
+
+## Execute-Assembly
+
+The enormous abuse of PowerShell resulted in close monitoring by defenders and EDR solutions, which are able to (often) detect and block even obfuscated commands. 
+- [GhostPack](https://github.com/GhostPack)
+- [Rubeus](https://github.com/GhostPack/Rubeus)
+- [SharpView](https://github.com/tevora-threat/SharpView)
+- [SharpHound](https://github.com/BloodHoundAD/SharpHound)
+
+Hunting for the usage of .NET tools like Rubeus, combined with injection techniques such as Cobalt Strike's *execute-assembly* has proven to be a challenge task because: 
+- Reflective Injection is used, so nothing is stored on disk 
+- After execution, the memory region is cleared and there are very little traces of injection and/or what was injected (even in memory!).
+
+PowerShell has the ability to load .NET assemblies from a specified location or even from a Byte Array (like attackers prefer)
+
+Reference:
+- [dotnet-gargoyle](https://github.com/WithSecureLabs/dotnet-gargoyle) - A spiritual .NET equivalent to the Gargoyle memory scanning evasion technique
+- [Loading .NET Assemblies From Memory](https://powershell.one/tricks/assemblies/load-from-memory)
+- [Suspicious .NET Reflection via PowerShell](https://www.elastic.co/guide/en/security/current/suspicious-net-reflection-via-powershell.html)
+
+The easiest way in which we can cause the *LoadImage()* function to be called in order for a custom assembly to be loaded is through PowerShell.
+
+```powershell
+# take a file...
+$Path = "C:\Users\admin\Downloads\dotnet-gargoyle\x64\Release\DemoAssembly.dll"
+# read all bytes...
+$bytes = [System.IO.File]::ReadAllBytes($Path)
+$assembly = [System.Reflection.Assembly]::Load($bytes)
+$t = $assembly.GetType("DemoAssembly.DemoClass")
+$m = $t.GetMethod("HelloWorld")
+$instance = [Activator]::CreateInstance($t, $null)
+$m.Invoke($instance, $null)
+```
+
+**Embedding Binary Dependencies**
+
+Step 1: Base64 Encoding: 
+- To turn any binary file into a string, you simply read the file content as bytes, then convert the bytes to a Base64-encoded string:
+```powershell
+# take a file...
+$Path = "$PSScriptRoot\Microsoft.Experimental.IO.dll"
+# read all bytes...
+$bytes = [System.IO.File]::ReadAllBytes($Path)
+# turn bytes into Base64 string:
+$string = [System.Convert]::ToBase64String($bytes)
+
+# the result is a VERY long string. It is much longer
+# than the original file:
+$file = Get-Item -Path $Path
+[PSCustomObject]@{
+    'Original File Length' = $file.Length
+    'Base64 String Length' = $string.Length
+    'Size Increase' = ('{0:p}' -f ($string.Length / $file.Length))
+} | Format-List
+```
+
+Step 2: Embedding the Resource:
+- To load the string into memory and get access to the DLL functionality, convert it back into a byte array and load the bytes into memory. Unfortunately, Add-Type can load only file-based DLLs into memory. But you can resort to *[System.Reflection.Assembly]::Load()* instead.
+```powershell
+$dll = 'TVqQAAMAAAAEAAAA//8AALgAAAAA...'
+$bytes = [System.Convert]::FromBase64String($dll)
+[System.Reflection.Assembly]::Load($bytes)
+```
+
+## ClrGuard
+
+[ClrGuard](https://github.com/endgameinc/ClrGuard)
+ClrGuard is a proof of concept project to explore instrumenting the Common Language Runtime (CLR) for security purposes. ClrGuard leverages a simple appInit DLL (ClrHook32/64.dll) in order to load into all CLR/.NET processes. From there, it performs an in-line hook of security critical functions. Currently, the only implemented hook is on the native LoadImage() function. When events are observed, they are sent over a named pipe to a monitoring process for further introspection and mitigation decision.
+
+```md
+NOTE: There are execute-assembly variations included in multiple attacking frameworks. The detection method covered by **ClrGuard** doesn't work only against Cobalt Strike.
+```
+
+```
+C:\Users\admin\Desktop\ClrGuard\dist>ClrGuard.exe
+-- CLRGuard --
+Client connected
+Read command msg
++ Pid: 2476, process: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe,
+ module size: 1000
+  Module hash: A949B6238C41F1B585F488849BB3E5BCF72F52DCF7B28C241E63F3AB099DA828
+  Module: 13g0kbve.dll
+  TypeRef: System::Object
+  TypeRef: System.Runtime.CompilerServices::CompilationRelaxationsAttribute
+  TypeRef: System.Runtime.CompilerServices::RuntimeCompatibilityAttribute
+  TypeRef hash: C877074345EA6EB82FCE5111CFF4AE6631CA0285AAD9018B7EACB86DADFB31EC
+
+whitelisted
+Client connected
+Read command msg
++ Pid: 2904, process: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe,
+ module size: 1000
+  Module hash: 3AD2D846CB10763DF1F6BB23B50467F62E8EEE2907C17ECB592477BA2351D93B
+  Module: fzqfkdyz.dll
+  TypeRef: System::Object
+  TypeRef: System.Runtime.CompilerServices::CompilationRelaxationsAttribute
+  TypeRef: System.Runtime.CompilerServices::RuntimeCompatibilityAttribute
+  TypeRef hash: C877074345EA6EB82FCE5111CFF4AE6631CA0285AAD9018B7EACB86DADFB31EC
+
+whitelisted
+```
+
+### AddTypeRaceCondition
+[Add-TypeRaceCondition.ps1](https://github.com/ahhh/PSSE/blob/master/Add-TypeRaceCondition.ps1) exploits a race condition vulnerability in Add-Type and compiles and loads CSharp code, bypassing constrained language mode. The vulnerability in Add-Type relies on the fact that it drops the code to be compiled to a .cs file in the user's TEMP directory. Considering %TEMP% is writeable by the user, Add-TypeRaceCondition continually looks for new .cs files in %TEMP% and overwrites any new ones with the code specified in -TypeDefinition. Note: this is is not a PowerShell bug. This is a bug in how files are created, compiled, and loaded with csc.exe.
+
+**Indicators of compromise**
+Indicators related to Add-Type hijacking. 
+Note: There is plenty of legitimate, signed PowerShell code that calls Add-Type.
+Legitimate calls to Add-Type will drop files with prevalence.
+
+**File artifacts:**
+```
+1) %TEMP%\<RANDOM_8_CHARS>.0.cs
+   * Created by, deleted by, written to by powershell.exe
+   * Read by csc.exe
+   * Does not persist. Deleted quickly after use.
+```
+```
+2) %TEMP%\<RANDOM_8_CHARS>.dll
+   * Written to by csc.exe
+   * Read from by, deleted by powershell.exe
+   * This will be a low-prevalence PE not associated with DLLs emited via otherwise legitimate calls to Add-Type.
+   * Does not persist. Deleted quickly after use.
+   * Unfortunately, image load sysmon events are not possible with this artifact since it is not loaded via traditional means.
+```
+**Process creation:**
+```
+1) "<DOTNET_FRAMEWORK_DIR>\csc.exe" /noconfig /fullpaths @"%TEMP%\<RANDOM_8_CHARS>.cmdline"
+   * Parent process: powershell.exe
+2) <DOTNET_FRAMEWORK_DIR>\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:%TEMP%\RES<RANDOM_3_HEX_CHARS>.tmp" "%TEMP%\CSC<RANDOM_32_HEX_CHARS>.TMP"
+   * Parent process: csc.exe
+```
+
+
