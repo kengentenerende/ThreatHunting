@@ -455,7 +455,6 @@ Message      : Process Create:
                {1E460BD7-F1C3-4B2E-88BF-4E770A288AF5}{1E460BD7-F1C3-4B2E-88BF-4E770A288AF5}
                ParentUser: ATTACKDEFENSE\Administrator
 ```
-
 #### Sysmon Event ID 3 - Network Connection
 ```
 Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=3} | ? {$_.Properties[4].Value -ilike "*TARGET_IMAGE*"} | fl
@@ -483,6 +482,29 @@ Message      : Network connection detected:
                DestinationHostname: ec2-52-77-211-51.ap-southeast-1.compute.amazonaws.com
                DestinationPort: 80
                DestinationPortName: http
+```
+#### Sysmon Event ID 11 - CreateRemoteThread
+```
+Get-WinEvent -FilterHashtable @{logname="Microsoft-Windows-Sysmon/Operational"; id=11} | Where-Object {$_.Properties[5].Value -like "*TARGET_FILENAME*"} | fl
+```
+```
+Message      : File created:
+               RuleName: DLL
+               UtcTime: 2024-03-22 00:39:10.971
+               ProcessGuid: {43199d79-d32e-65fc-5202-000000001b00}
+               ProcessId: 3128
+               Image: C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscorsvw.exe
+               TargetFilename: C:\Windows\assembly\NativeImages_v4.0.30319_64\Temp\c38-0\Microsoft.Build.resources.dll
+               CreationUtcTime: 2024-03-22 00:39:10.971
+-------------------------------------------------------------------------------------------
+    <EventData>
+        <Data Name="UtcTime">2017-05-13 19:44:55.313</Data>
+        <Data Name="ProcessGuid">{A23EAE89-6237-5917-0000-0010300E6601}</Data>
+        <Data Name="ProcessId">19200</Data>
+        <Data Name="Image">C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscorsvw.exe</Data>
+        <Data Name="TargetFilename">C:\Windows\assembly\NativeImages_v4.0.30319_64\Temp\4b00-0\AxImp.exe</Data>
+        <Data Name="CreationUtcTime">2017-05-13 19:44:55.313</Data>
+    </EventData>
 ```
 #### Sysmon Event ID 8 - CreateRemoteThread
 ```
