@@ -995,6 +995,63 @@ Refer to [Hunting in Sysmon](https://github.com/kengentenerende/ThreatHunting/bl
 ## Event Tracing for Windows & SilkETW 
 In Windows, there is a kernel-level tracing facility, which logs kernel and/or application level events to a log file known as **Event Tracing for Windows** (ETW). Although less well known, perhaps due to its complexity and the mass of events generated, it can provide valuable data for a threat hunter. **FuzzySec** released SilkETW to help deal with the complexity of setting up ETW.
 
+```
+
+███████╗██╗██╗   ██╗  ██╗███████╗████████╗██╗    ██╗
+██╔════╝██║██║   ██║ ██╔╝██╔════╝╚══██╔══╝██║    ██║
+███████╗██║██║   █████╔╝ █████╗     ██║   ██║ █╗ ██║
+╚════██║██║██║   ██╔═██╗ ██╔══╝     ██║   ██║███╗██║
+███████║██║█████╗██║  ██╗███████╗   ██║   ╚███╔███╔╝
+╚══════╝╚═╝╚════╝╚═╝  ╚═╝╚══════╝   ╚═╝    ╚══╝╚══╝
+                  [v0.8 - Ruben Boonen => @FuzzySec]
+
+
+ >--~~--> Args? <--~~--<
+
+-h  (--help)          This help menu
+-s  (--silk)          Trivia about Silk
+-t  (--type)          Specify if we are using a Kernel or User collector
+-kk (--kernelkeyword) Valid keywords: Process, Thread, ImageLoad, ProcessCounters, ContextSwitch,
+                      DeferedProcedureCalls, Interrupt, SystemCall, DiskIO, DiskFileIO, DiskIOInit,
+                      Dispatcher, Memory, MemoryHardFaults, VirtualAlloc, VAMap, NetworkTCPIP, Registry,
+                      AdvancedLocalProcedureCalls, SplitIO, Handle, Driver, OS, Profile, Default,
+                      ThreadTime, FileIO, FileIOInit, Verbose, All, IOQueue, ThreadPriority,
+                      ReferenceSet, PMCProfile, NonContainer
+-uk (--userkeyword)   Define a mask of valid keywords, eg 0x2038 -> JitKeyword|InteropKeyword|
+                      LoaderKeyword|NGenKeyword
+-pn (--providername)  User ETW provider name, eg "Microsoft-Windows-DotNETRuntime" or its
+                      corresponding GUID eg "e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"
+-l  (--level)         Logging level: Always, Critical, Error, Warning, Informational, Verbose
+-ot (--outputtype)    Output type: POST to "URL", write to "file" or write to "eventlog"
+-p  (--path)          Full output file path or URL. Event logs are automatically written to
+                      "Applications and Services Logs\SilkETW-Log"
+-f  (--filter)        Filter types: None, EventName, ProcessID, ProcessName, Opcode
+-fv (--filtervalue)   Filter type capture value, eg "svchost" for ProcessName
+-y  (--yara)          Full path to folder containing Yara rules
+-yo (--yaraoptions)   Either record "All" events or only "Matches"
+
+ >--~~--> Usage? <--~~--<
+
+# Use a VirtualAlloc Kernel collector, POST results to Elasticsearch
+SilkETW.exe -t kernel -kk VirtualAlloc -ot url -p https://some.elk:9200/valloc/_doc/
+
+# Use a Process Kernel collector, filter on PID
+SilkETW.exe -t kernel -kk Process -ot url -p https://some.elk:9200/kproc/_doc/ -f ProcessID -fv 11223
+
+# Use a .Net User collector, specify mask, filter on EventName, write to file
+SilkETW.exe -t user -pn Microsoft-Windows-DotNETRuntime -uk 0x2038 -ot file -p C:\Some\Path\out.json -f EventName -fv Me
+thod/LoadVerbose
+
+# Use a DNS User collector, specify log level, write to file
+SilkETW.exe -t user -pn Microsoft-Windows-DNS-Client -l Always -ot file -p C:\Some\Path\out.json
+
+# Use an LDAP User collector, perform Yara matching, POST matches to Elasticsearch
+SilkETW.exe -t user -pn Microsoft-Windows-Ldap-Client -ot url -p https://some.elk:9200/ldap/_doc/ -y C:\Some\Yara\Rule\F
+older -yo matches
+
+# Specify "Microsoft-Windows-COM-Perf" by its GUID, write results to the event log
+SilkETW.exe -t user -pn b8d6861b-d20f-4eec-bbae-87e0dd80602b -ot eventlog
+```
 - [Detecting Malicious Use of .NET](https://blog.f-secure.com/detecting-malicious-use-of-net-part-1/)
 - [SilkETW & SilkService](https://github.com/mandiant/SilkETW)
 - [Threat Hunting with ETW events and HELK — Part 1: Installing SilkETW](https://medium.com/threat-hunters-forge/threat-hunting-with-etw-events-and-helk-part-1-installing-silketw-6eb74815e4a0)
