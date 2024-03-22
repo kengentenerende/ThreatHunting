@@ -1078,6 +1078,7 @@ Reference:
 - [dotnet-gargoyle](https://github.com/WithSecureLabs/dotnet-gargoyle) - A spiritual .NET equivalent to the Gargoyle memory scanning evasion technique
 - [Loading .NET Assemblies From Memory](https://powershell.one/tricks/assemblies/load-from-memory)
 - [Suspicious .NET Reflection via PowerShell](https://www.elastic.co/guide/en/security/current/suspicious-net-reflection-via-powershell.html)
+- [C# In Memory Assemblies](https://exord66.github.io/csharp-in-memory-assemblies)
 
 The easiest way in which we can cause the *LoadImage()* function to be called in order for a custom assembly to be loaded is through PowerShell.
 
