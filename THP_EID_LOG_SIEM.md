@@ -399,28 +399,28 @@ get-winevent -FilterHashTable @{logname="'Microsoft-Windows-Sysmon/Operational";
 ```
 Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=1} | Where-Object {$_.Properties[10].Value -ilike "*TARGET_COMMANDLINE*"} | fl
 
-1   RuleName
-2   UtcTime
-3   ProcessGuid
-4   ProcessId
-5   Image
-6   FileVersion
-7   Description
-8   Product
-9   Company
-10  OriginalFileName
-11  CommandLine
-12  User
-13  LogonGuid
-14  LogonId
-15  TerminalSessionId
-17  IntegrityLevel
-18  Hashes
-19  ParentProcessGuid
-20  ParentProcessId
-21  ParentImage
-22  ParentCommandLine
-23  ParentUser
+0  RuleName
+1  UtcTime
+2  ProcessGuid
+3  ProcessId
+4  Image
+5  FileVersion
+6  Description
+7  Product
+8  Company
+9  OriginalFileName
+10  CommandLine
+11  User
+12  LogonGuid
+13  LogonId
+14  TerminalSessionId
+15  IntegrityLevel
+16  Hashes
+17  ParentProcessGuid
+18  ParentProcessId
+19  ParentImage
+20  ParentCommandLine
+21  ParentUser
 ```
 
 ```
