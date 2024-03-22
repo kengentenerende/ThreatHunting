@@ -458,8 +458,10 @@ Message      : Process Create:
 
 #### Sysmon Event ID 3 - Network Connection
 ```
-Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=3} | ? {$_
-.Properties[4].Value -ilike "*TARGET_IMAGE*"} | fl
+Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=3} | ? {$_.Properties[4].Value -ilike "*TARGET_IMAGE*"} | fl
+```
+```
+Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-Sysmon/Operational"; ID=3} | Where-Object { $_.Properties[4].Value -notlike "*TARGET_IMAGE*" } | fl
 ```
 ```
 Message      : Network connection detected:
@@ -966,4 +968,21 @@ Invoke-Inveigh -IP 192.168.1.10 -SpooferIP 192.168.2.50 -HTTP N
 ```
 Invoke-Inveigh -HTTPResponse "<html><head><meta http-equiv='refresh' content='0; url=https://duckduckgo.com/'></head></html>"
 ```
- 
+
+# Hunting .Net Malware
+
+- [LOLBAS](https://lolbas-project.github.io/)
+- [LOLBAS - Msbuild](https://lolbas-project.github.io/lolbas/Binaries/Msbuild/)
+
+Paths:
+```
+C:\Windows\Microsoft.NET\Framework\v2.0.50727\Msbuild.exe
+C:\Windows\Microsoft.NET\Framework64\v2.0.50727\Msbuild.exe
+C:\Windows\Microsoft.NET\Framework\v3.5\Msbuild.exe
+C:\Windows\Microsoft.NET\Framework64\v3.5\Msbuild.exe
+C:\Windows\Microsoft.NET\Framework\v4.0.30319\Msbuild.exe
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\Msbuild.exe
+C:\Program Files (x86)\MSBuild\14.0\bin\MSBuild.exe
+```
+
+Refer to [Hunting in Sysmon](https://github.com/kengentenerende/ThreatHunting/blob/master/THP_EID_LOG_SIEM.md#hunting-in-sysmon)
