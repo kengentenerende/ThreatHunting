@@ -613,14 +613,6 @@ Pull Windows Defender event logs 1116 (malware detected) and 1117 (malware block
 ```
 PS C:\> Get-WinEvent -FilterHashtable @{path="WindowsDefender.evtx";id=1116,1117}
 ```
-Additional Info
---------------
-A printable PDF version of this cheatsheet is available here:
-[Get-WinEvent](pdfs/Get-WinEvent.pdf)
-
-Cheat Sheet Version
---------------
-### **`Version 1.0`**
 
 # Advance Hunting
 
