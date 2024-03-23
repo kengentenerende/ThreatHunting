@@ -1341,3 +1341,170 @@ Legitimate calls to Add-Type will drop files with prevalence.
 ```
 
 
+# Event Monitoring
+
+## Password guessing
+|Event|Command|
+|-----|-------|
+|Password guessing|`.\DeepBlue.ps1 .\evtx\smb-password-guessing-security.evtx`|
+```
+Date    : 9/19/2016 9:50:06 AM
+Log     : Security
+EventID : 4625
+Message : High number of logon failures for one account
+Results : Username: Administrator
+          Total logon failures: 3560
+Command :
+Decoded :
+
+Date    : 9/19/2016 9:50:06 AM
+Log     : Security
+EventID : 4625
+Message : High number of total logon failures for multiple accounts
+Results : Total accounts: 2
+          Total logon failures: 3561
+
+Command :
+Decoded :
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\smb-password-guessing-security.evtx"; id=4625} | Measure | Select Count
+
+Count
+-----
+ 3561
+
+TimeCreated  : 9/19/2016 9:52:47 AM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4625
+Message      : An account failed to log on.
+
+               Subject:
+                Security ID:            S-1-0-0
+                Account Name:           -
+                Account Domain:         -
+                Logon ID:               0x0
+
+               Logon Type:                      3
+
+               Account For Which Logon Failed:
+                Security ID:            S-1-0-0
+                Account Name:           Administrator
+                Account Domain:         .
+
+               Failure Information:
+                Failure Reason:         Unknown user name or bad password.
+                Status:                 0xC000006D
+                Sub Status:             0xC000006A
+
+               Process Information:
+                Caller Process ID:      0x0
+                Caller Process Name:    -
+
+               Network Information:
+                Workstation Name:       uiBfvnfTcIG4xJoi
+                Source Network Address: 192.168.198.149
+                Source Port:            52057
+
+               Detailed Authentication Information:
+                Logon Process:          NtLmSsp
+                Authentication Package: NTLM
+                Transited Services:     -
+                Package Name (NTLM only):       -
+                Key Length:             0
+```
+
+## PSAttack
+|Event|Command|
+|-----|-------|
+|PSAttack|`.\DeepBlue.ps1 .\evtx\psattack-security.evtx`|
+
+Reference:
+- (https://any.run/report/0f4fee7c97e529bd25121467a560716806f2832295fa069a185b405acaee7862/e9eff4d4-98c6-47ad-a8ba-ff6051a63949)
+- (https://www.hybrid-analysis.com/sample/8ade41a6c8af18fde1c390d67d7902acaedc5b94cd12718a214560c4239e2bc7/5a3023a37ca3e10e13006a03)
+
+```
+Date    : 9/20/2016 11:41:27 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Resource File To COFF Object Conversion Utility cvtres.exe
+          PSAttack-style command via cvtres.exe
+
+Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RES3874.tmp"
+          "c:\Users\IEUser\AppData\Local\Temp\CSC14C61BA389694F5FAB6FBD8E9CFA7CEF.TMP"
+Decoded :
+
+Date    : 9/20/2016 11:41:27 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Use of C Sharp compiler csc.exe
+          PSAttack-style command via csc.exe
+
+Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\kwos13rh.cmdline"
+Decoded :
+
+Date    : 9/20/2016 11:33:13 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Resource File To COFF Object Conversion Utility cvtres.exe
+          PSAttack-style command via cvtres.exe
+
+Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RESB25D.tmp"
+          "c:\Users\IEUser\AppData\Local\Temp\CSCAE981B6C775D478784A2D2A90379D51.TMP"
+Decoded :
+
+Date    : 9/20/2016 11:33:13 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Use of C Sharp compiler csc.exe
+          PSAttack-style command via csc.exe
+
+Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\0xqpayvt.cmdline"
+Decoded :
+
+Date    : 9/20/2016 11:28:58 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Resource File To COFF Object Conversion Utility cvtres.exe
+          PSAttack-style command via cvtres.exe
+
+Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RESCB96.tmp"
+          "c:\Users\IEUser\AppData\Local\Temp\CSCDD7CF7985DD64D48B389AD7A587C926D.TMP"
+Decoded :
+
+Date    : 9/20/2016 11:28:58 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Use of C Sharp compiler csc.exe
+          PSAttack-style command via csc.exe
+
+Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\wlqywrdm.cmdline"
+Decoded :
+
+Date    : 9/20/2016 11:27:45 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Resource File To COFF Object Conversion Utility cvtres.exe
+          PSAttack-style command via cvtres.exe
+
+Command : C:\Windows\Microsoft.NET\Framework\v4.0.30319\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:C:\Users\IEUser\AppData\Local\Temp\RESADB2.tmp"
+          "c:\Users\IEUser\AppData\Local\Temp\CSC4EC78419D61349E285CD9DBCB3C7409.TMP"
+Decoded :
+
+Date    : 9/20/2016 11:27:44 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Use of C Sharp compiler csc.exe
+          PSAttack-style command via csc.exe
+
+Command : "C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe" /noconfig /fullpaths @"C:\Users\IEUser\AppData\Local\Temp\g4g34pot.cmdline"
+Decoded :
+```
