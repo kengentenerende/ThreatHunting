@@ -2031,3 +2031,137 @@ Windows PowerShell event log entries indicating the start and stop of PowerShell
 - E**vent ID 403**: *Engine state is changed from Available to Stopped,* upon the end of the PowerShell activity. 
 - **Event ID 40961**: *PowerShell console is starting up*
 - **Event ID 4100**: *Error Message = File (path to) test.ps1 cannot be loaded...*
+
+# ELK
+Elastic's ELK is an open source stack that consists of three applications (Elasticsearch, Logstash and Kibana) working in synergy to provide users with end-to-end search and visualization capabilities to analyze and investigate log file sources in real time.
+
+ELK Stack 
+- Elasticsearch – index storage and search backend
+- Logstash – used to shape logs and ship logs to Elasticsearch
+- Kibana – GUI frontend for search, visualization, dashboards, reporting and alerting, and Elastic stack cluster management
+- Beats – Lightweight log shippers that are installed on endpoints
+
+# Visualization
+
+- Home > Visualization
+- Click the Create Visualization
+- Click the Vertical Bar > *target_log*
+
+Now we have our Metrics and Buckets. Sample Configuration for Top 10 Agent Hostname:
+
+- **Metrics**: Y-axis
+- **Buckets**: X-axis
+- **Aggregation**: Terms
+- **Field**: agent.hostname.keyword
+- **Order** by: Metric: Count
+- **Order**: Descending
+- **Size**: 10
+- **Custom Label**: Top 10 Agent Hostname
+
+Go to Dashboard and add all of your visualized charts.
+
+Note: On the search bar part, you may see there's a **KQL** there. KQL stands for
+Kibana Query Language. Make sure to enable KQL for every session for better search usage.
+
+
+## Credential Attack
+Fields of Intereset:
+
+- event.code: **4625**
+- Time
+- agent.name / winlog.computer_name
+- user.name
+- winlog.event_data.LogonType
+- winlog.event_data.FailureReason
+- winlog.logon.failure.reason
+- winlog.logon.failure.sub_status
+
+## Remote Login Sessions
+Fields of Intereset:
+
+- event.code: **4624** (Logon Successful)
+- event.code: **4625** (Failed Logon)
+- winlog.event_data.LogonType: **10**
+- Time
+- agent.name / winlog.computer_name
+- user.name
+- winlog.logon.type
+
+## Network Monitoring IP
+Fields of Intereset:
+
+- event.code: **3**
+- Time	
+- agent.name	
+- winlog.computer_name	
+- process.executable	
+- user.name	
+- destination.domain
+
+## Network Monitoring Domain
+Fields of Intereset:
+
+- event.code: **3**
+- Time	
+- agent.name	
+- winlog.computer_name	
+- process.executable	
+- user.name	
+- source.ip	
+- source.port	
+- destination.ip	
+- destination.port
+
+## Credential Dumping
+Fields of Intereset:
+
+- event.code: *1* or *4688*
+- Time 
+- process.parent.executable 
+- process.executable
+- process.parent.command_line: *.dmp* *lssas*
+- process.command_line 
+- agent.hostname
+- winlog.user.name
+
+## Credential Dumping thru Fileless Attack
+Fields of Intereset:
+
+- event.code: *1* or *4688*
+- Time 
+- process.parent.executable 
+- process.executable
+- process.parent.command_line: **mimikatz* *DumpCreds*
+- process.command_line 
+- agent.hostname
+- winlog.user.name
+
+## Spearphishing Attachment / MalDoc
+Fields of Intereset:
+
+- event.code: *1* or *4688*
+- process.parent.executable : winword.exe
+- process.executable : *powershell.exe* OR *cmd.exe*
+- Time
+- winlog.computer_name
+- winlog.user.name
+
+## Vssadmin Abuse
+Fields of Intereset:
+
+- event.code: *1* or *4688*
+- Time
+- process.working_directory 
+- process.parent.executable: *cmd* 
+- process.executable: *vssadmin*
+- process.command_line: *vssadmin* *delete* *shadows* 
+- agent.hostname
+
+## Log Tampering
+Fields of Intereset:
+
+- event.code: *104* or *1102*
+- Time
+- winlog.computer_name
+- winlog.channel
+- user.name
