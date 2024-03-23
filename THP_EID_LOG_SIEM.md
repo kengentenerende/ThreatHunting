@@ -373,6 +373,34 @@ Event IDs to hunt for regarding log clearing are Event IDs 1102 and 104.
 |     29    |     FileExecutableDetected    |     File   Executable Detected                            |
 
 ## Hunting in Sysmon
+
+- In truth, Sysmon could be considered as **HIDS** (Host Intrusion Detection System)
+- Or even provide major elements of what could be a homegrown **EDR** (Endpoint Detection & Response)
+
+**Process**
+- Process creation (1)
+- Driver Loads (6)
+- Image/DLL loads (7)
+- CreateRemoteThread (8)
+- Named Pipes (17/18)
+
+**Network**
+- Connection (3) hostname, IP, port PID
+
+**Registry**
+- Key/value creation or deletion (12)
+- Modification (13)
+
+**File**
+- Create time modification (2)
+- File create (11)
+- ADS create (15)
+
+**WMI**
+- Event filter activity (19)
+- Consumer activity (20)
+- Consumer filter activity (21)
+
 Pull all Sysmon logs from the live Sysmon Event log (requires Sysmon and an admin PowerShell):
 ```
 PS C:\> Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational"
@@ -557,9 +585,15 @@ View all events in the live system Event Log:
 ```
 PS C:\> Get-WinEvent -LogName system
 ```
-
+Long Tail Analysis via PowerShell - Use the PowerShell pipeline with both the Where-Object and Group-Object cmdlets to sort and organize all of the events
+```
+Get-WinEvent -Path T510-security.evtx | Group-Object id -NoElement | sort count
+```
+Determine how many events occurred on 1/20/2014 with the event ID 4634
+```
+Get-WinEvent -FilterHashtable @{Path=".\T510-security.evtx"; id=4634; starttime=[datetime]"01/20/2014"; EndTime=[datetime]"01/21/2014"} | Measure | Select Count
+```
 View all events in the live security Event Log (requires administrator PowerShell):
-
 ```
 PS C:\> Get-WinEvent -LogName security
 ```
@@ -637,6 +671,62 @@ Pull Windows Defender event logs 1116 (malware detected) and 1117 (malware block
 ```
 PS C:\> Get-WinEvent -FilterHashtable @{path="WindowsDefender.evtx";id=1116,1117}
 ```
+# DeepBlueCLI
+[DeepBlueCLI](https://github.com/sans-blue-team/DeepBlueCLI) - a PowerShell Module for Threat Hunting via Windows Event Logs
+
+Usage:
+```
+.\DeepBlue.ps1 <event log name> <evtx filename>
+```
+See the Set-ExecutionPolicy Readme if you receive a 'running scripts is disabled on this system' error.
+
+Process local Windows security event log (PowerShell must be run as Administrator):
+```
+.\DeepBlue.ps1
+```
+or:
+```
+.\DeepBlue.ps1 -log security
+```
+Process local Windows system event log:
+```
+.\DeepBlue.ps1 -log system
+```
+Process evtx file:
+```
+.\DeepBlue.ps1 .\evtx\new-user-security.evtx
+```
+Powershell Powershell logs with Out-GridView
+```
+.\DeepBlue.ps1 -log PowerShell | Out-GridView
+```
+
+**Suspicious account behavior**
+- User creation
+- User added to local/global/universal groups
+- Password guessing (multiple logon failures, one account)
+- Password spraying via failed logon (multiple logon failures, multiple accounts)
+- Password spraying via explicit credentials
+- Bloodhound (admin privileges assigned to the same account with multiple Security IDs)
+
+**Command line/Sysmon/PowerShell auditing**
+- Long command lines
+- Regex searches
+- Obfuscated commands
+- PowerShell launched via WMIC or PsExec
+- PowerShell Net.WebClient Downloadstring
+- Compressed/Base64 encoded commands (with automatic decompression/decoding)
+
+**Unsigned EXEs or DLLs**
+- Service auditing
+- Suspicious service creation
+- Service creation errors
+- Stopping/starting the Windows Event Log service (potential event log manipulation)
+
+**Mimikatz**
+- *lsadump::sam*
+
+**EMET & Applocker Blocks**
 
 # Advance Hunting
 
