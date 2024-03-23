@@ -1949,3 +1949,78 @@ Legitimate calls to Add-Type will drop files with prevalence.
 2) <DOTNET_FRAMEWORK_DIR>\cvtres.exe /NOLOGO /READONLY /MACHINE:IX86 "/OUT:%TEMP%\RES<RANDOM_3_HEX_CHARS>.tmp" "%TEMP%\CSC<RANDOM_32_HEX_CHARS>.TMP"
    * Parent process: csc.exe
 ```
+
+
+# Suspicious Powershell Commands
+
+Ignore the commands in the profile file
+```
+-NoProfile
+-nop
+```
+shorthand for -NonInteractive, meaning an interactive prompt to the user will not be presented.
+```
+-NonInteractive
+-NonI
+```
+indicates the following chunk of text is a encoded command.
+```
+-Encodedcommand
+-Enc
+-eNco
+-^e^C^
+-ec
+```
+Indicates that the PowerShell session window should be started in a hidden manner.
+```
+-WindowsStyle Hidden
+-W Hidden
+```
+Disables the execution policy for the current PowerShell session (default disallows execution).
+```
+-Exec Bypass
+-ExecutionPolicy Bypass
+-ep bypass
+```
+Creates an instance of a .NET Framework or COM object, here Net.Webclient object
+```
+New-Object
+```
+Will download the contents from URL into a memory buffer (which in turn IEX will execute)
+```
+-downloadstring
+```
+Provides common methods for sending data to and receiving data from a resource identified by a URL
+```
+Net.webclient
+```
+The Get-WmiObject cmdlet gets instances of WMI classes or information about the available WMI classes
+```
+Get-WMIObject
+Get-CimInstance
+```
+The Start-Process cmdlet starts one or more processes on the local computer
+```
+Start-Process
+```
+Is an alias for the Invoke-Expression cmdlet that will execute the command provided on the local machine.
+```
+-IEX
+```
+- The dot (.) in PowerShell is the dot sourcing operator. It is used to run a script in the current scope rather than in a new scope. 
+- This is basically for **iex** which stands for invoke expression. The Invoke-Expression cmdlet (*command-let*) evaluates or runs a specified string as a command and returns the results of the expression or command.
+- $PSHome stands for "C:\Windows\System32\WindowsPowerShell\[version]"
+
+```
+.($pShOmE[4]+$PSHome[34]+'X')
+```
+- In PowerShell, the & (ampersand) symbol is the call operator. It is used to invoke a command or script. When you use & followed by an expression or a command, PowerShell treats it as a command to be executed. 
+- MDR stands for **"MaximumDriveCount"**
+
+```
+&((gEt-VARIABLe '*mdR*').naME[3,11,2]-jOiN'')
+```
+Reverse IEX Command
+```
+(noiSsErPXe-EkovnI" ,'.','RiGh'+'t'+'tOlef'+'t')
+```
