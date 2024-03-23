@@ -2065,7 +2065,7 @@ Kibana Query Language. Make sure to enable KQL for every session for better sear
 
 
 ## Credential Attack
-Fields of Intereset:
+Fields of Interest:
 
 - event.code: **4625**
 - Time
@@ -2077,7 +2077,7 @@ Fields of Intereset:
 - winlog.logon.failure.sub_status
 
 ## Remote Login Sessions
-Fields of Intereset:
+Fields of Interest:
 
 - event.code: **4624** (Logon Successful)
 - event.code: **4625** (Failed Logon)
@@ -2088,7 +2088,7 @@ Fields of Intereset:
 - winlog.logon.type
 
 ## Network Monitoring IP
-Fields of Intereset:
+Fields of Interest:
 
 - event.code: **3**
 - Time	
@@ -2099,7 +2099,7 @@ Fields of Intereset:
 - destination.domain
 
 ## Network Monitoring Domain
-Fields of Intereset:
+Fields of Interest:
 
 - event.code: **3**
 - Time	
@@ -2113,7 +2113,7 @@ Fields of Intereset:
 - destination.port
 
 ## Credential Dumping
-Fields of Intereset:
+Fields of Interest:
 
 - event.code: *1* or *4688*
 - Time 
@@ -2125,7 +2125,7 @@ Fields of Intereset:
 - winlog.user.name
 
 ## Credential Dumping thru Fileless Attack
-Fields of Intereset:
+Fields of Interest:
 
 - event.code: *1* or *4688*
 - Time 
@@ -2137,7 +2137,7 @@ Fields of Intereset:
 - winlog.user.name
 
 ## Spearphishing Attachment / MalDoc
-Fields of Intereset:
+Fields of Interest:
 
 - event.code: *1* or *4688*
 - process.parent.executable : winword.exe
@@ -2147,7 +2147,7 @@ Fields of Intereset:
 - winlog.user.name
 
 ## Vssadmin Abuse
-Fields of Intereset:
+Fields of Interest:
 
 - event.code: *1* or *4688*
 - Time
@@ -2158,7 +2158,7 @@ Fields of Intereset:
 - agent.hostname
 
 ## Log Tampering
-Fields of Intereset:
+Fields of Interest:
 
 - event.code: *104* or *1102*
 - Time
