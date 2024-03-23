@@ -28,6 +28,12 @@
 ### Hunting Tips
 ```
 Sessions 0 and 1 are normal. Additional sessions may becreated by Remote Desktop Protocol (RDP) sessions and Fast User Switching on shared computers. If this does not apply to your environment, then it's worth checking theadditional sessions (if such exist). 
+
+• Shell and Userinit registry entries with undesirable values.
+• Having a parent process
+• Not running as NT AUTHORITY\SYSTEM
+• Runs out of a location that isn't \Windows\System32
+• Remember only 1 instance of smss.exe should be running
 ```
 
 ## Client/Server Run Subsystem Process (**csrss.exe**)
@@ -51,6 +57,9 @@ Sessions 0 and 1 are normal. Additional sessions may becreated by Remote Desktop
 Malware authors can masquerade their malware to appear as this process by hiding in plain sight. They can name the malware as csrss.exe but just misspell it slightly (cssrs.exe, cssrss.exe, and csrsss.exe.)
 
 Remember, typically you will see 2 instances of csrss.exe.
+
+• Running outside %system32% directory
+• Running as non system user
 ```
 
 ## Windows Logon Proxess (**winlogon.exe**)
@@ -76,6 +85,11 @@ Remember, typically you will see 2 instances of csrss.exe.
 ```
 The abuse within this process often comes within the different components of the login process. Malware sometimes abuses the SHELL registry value. This value should be explorer.exe. 
 Another registry key that is abused by malware that works in conjunction with winlogon.exe is Userinit.
+
+• Shell and Userinit registry entries with undesirable values.
+• Having a parent process
+• Not running as NT Authority\SYSTEM
+• Runs out of a location that isn't \Windows\System32
 ```
 
 ## Windows Initialization Process (**wininit.exe**)
@@ -94,6 +108,9 @@ Another registry key that is abused by malware that works in conjunction with wi
 ### Hunting Tips
 ```
 You should only see 1 instance of wininit.exe.
+
+• Running outside %system32% directory
+• Running as non system user
 ```
 
 ## Local Session Manager (**lsm.exe**)
@@ -114,6 +131,11 @@ You should only see 1 instance of wininit.exe.
 ```
 You should only see 1 instance of Ism.exe on Windows 7 machines. 
 You should NOT be seeing this on Windows 8 and beyond. It will be running as a service DLL instead: Ism.dll.
+
+• LSM spawning any child process
+• Running outside system32
+• Not running as SYSTEM
+• Parent process not wininit.exe
 ```
 
 ## Service Control Manager (**services.exe**)
@@ -137,6 +159,10 @@ You should NOT be seeing this on Windows 8 and beyond. It will be running as a s
 ```
 You should only see 1 instance of services.exe. This is a
 protected process which makes it difficult to tamper with.
+
+• Running outside \system32
+• Running as non SYSTEM user
+• Child of a process that is not WININIT.EXE
 ```
 
 ## Local Security Authority Subsystem (**lssas.exe**)
@@ -163,6 +189,10 @@ You should only see 1 instance of lsass.exe.
 This process  is commonly attacked and abused by hackers and malware. It is targeted to dump password hashes and is often used to hide in plain sight. 
 
 You might see different variations of spelling for this process (lass.exe or lsasss.exe), and might even see multiple instances of it, like with Stuxnet malware.
+
+• Not running as SYSTEM
+• Not running out of %SystemRoot%\System32\
+• Children of lsass are likely malicious
 ```
 
 ## Generic Service Host Process (**svchost.exe**)
@@ -197,6 +227,10 @@ This process is often misspelled to hide in plain sight.
 Another technique used with this process is to place it in different directories, but note that services.exe will not be the parent
 
 When it comes to services, we will need to perform extra steps to determine whether the service/DLL being loaded by svchost.exe is legitimate or not. It’s more than just checking for misspellings in svchost.exe, because techniques such as Process Injection and Process Hollowingcan attack legitimate services.
+
+• Processes not running under NT AUTHORITY\SYSTEM, LOCAL SERVICE or NETWORK SERVICE
+• Processes not using the –k [name] convention 
+• Parent not services.exe
 ```
 
 ## Windows Explorer (**explorer.exe**)

@@ -2020,7 +2020,14 @@ Is an alias for the Invoke-Expression cmdlet that will execute the command provi
 ```
 &((gEt-VARIABLe '*mdR*').naME[3,11,2]-jOiN'')
 ```
-Reverse IEX Command
+- Reverse IEX Command
 ```
 (noiSsErPXe-EkovnI" ,'.','RiGh'+'t'+'tOlef'+'t')
 ```
+# Powershell Detection VIA WinEvt Logs
+Windows PowerShell event log entries indicating the start and stop of PowerShell activity 
+- **Event ID 400**: *Engine state is changed from None to Available*, upon the start of any local or remote PowerShell activity. 
+- **Event ID 600**: Referencing *WSMan* (e.g. *Provider WSMan Is Started*), indicating the onset of PowerShell remoting activity on both source and destination systems. 
+- E**vent ID 403**: *Engine state is changed from Available to Stopped,* upon the end of the PowerShell activity. 
+- **Event ID 40961**: *PowerShell console is starting up*
+- **Event ID 4100**: *Error Message = File (path to) test.ps1 cannot be loaded...*
