@@ -2052,7 +2052,7 @@ Now we have our Metrics and Buckets. Sample Configuration for Top 10 Agent Hostn
 - **Metrics**: Y-axis
 - **Buckets**: X-axis
 - **Aggregation**: Terms
-- **Field**: agent.hostname.keyword
+- **Field**: agent.hostname / host.name.keyword
 - **Order** by: Metric: Count
 - **Order**: Descending
 - **Size**: 10
@@ -2093,6 +2093,7 @@ Fields of Interest:
 - event.code: **3**
 - Time	
 - agent.name	
+- agent.hostname / host.name
 - winlog.computer_name	
 - process.executable	
 - user.name	
@@ -2105,6 +2106,7 @@ Fields of Interest:
 - Time	
 - agent.name	
 - winlog.computer_name	
+- agent.hostname / host.name
 - process.executable	
 - user.name	
 - source.ip	
@@ -2121,7 +2123,7 @@ Fields of Interest:
 - process.executable
 - process.parent.command_line: *.dmp* *lssas*
 - process.command_line 
-- agent.hostname
+- agent.hostname / host.name
 - winlog.user.name
 
 ## Credential Dumping thru Fileless Attack
@@ -2133,18 +2135,30 @@ Fields of Interest:
 - process.executable
 - process.parent.command_line: **mimikatz* *DumpCreds*
 - process.command_line 
-- agent.hostname
+- agent.hostname / host.name
 - winlog.user.name
+
+## Squiblydoo
+Fields of Interest:
+
+- event.code: *1* 
+- winlog.event_data.ParentImage
+- winlog.event_data.ParentCommandLine: *scrobj* *regsvr32*
+- winlog.event_data.Image
+- winlog.event_data.CommandLine: *scrobj* *regsvr32*
+- agent.hostname
+- winlog.computer_name
 
 ## Spearphishing Attachment / MalDoc
 Fields of Interest:
 
 - event.code: *1* or *4688*
-- process.parent.executable : winword.exe
+- process.parent.executable : *winword.exe*
 - process.executable : *powershell.exe* OR *cmd.exe*
 - Time
 - winlog.computer_name
 - winlog.user.name
+- agent.hostname / host.name
 
 ## Vssadmin Abuse
 Fields of Interest:
@@ -2155,7 +2169,7 @@ Fields of Interest:
 - process.parent.executable: *cmd* 
 - process.executable: *vssadmin*
 - process.command_line: *vssadmin* *delete* *shadows* 
-- agent.hostname
+- agent.hostname / host.name
 
 ## Log Tampering
 Fields of Interest:
@@ -2164,4 +2178,45 @@ Fields of Interest:
 - Time
 - winlog.computer_name
 - winlog.channel
+- agent.hostname / host.name
 - user.name
+
+## Powershell Generic
+Fields of Interest:
+
+- event.code: *4104*
+- Time
+- winlog.event_data.ScriptBlockText: 
+- winlog.event_id
+- winlog.computer_name
+- agent.hostname / host.name
+
+### Framework
+- winlog.event_data.ScriptBlockText: (PowerUp OR Mimikatz OR NinjaCopy OR Get-ModifiablePath OR AllChecks OR AmsiBypass OR PsUACme OR Invoke-DLLInjection OR Invoke-ReflectivePEInjection OR Invoke-Shellcode OR Get-GPPPassword OR Get-Keystrokes OR Get-TimedScreenshot OR PowerView)
+
+### Compression
+- winlog.event_data.ScriptBlockText: *decompress*
+
+| File type                        | File Signature          | Base64Encoding |
+|----------------------------------|-------------------------|---------------:|
+| DOS Executable                   | MZ                      |             TV |
+| RAR Compressed                   | Rar!                    |          UmFyI |
+| PDF                              | %PDF                    |          JVBER |
+| Office/Zip                       | PK                      |             UE |
+| Rich Text Format                 | {\rtf                   |         e1xydG |
+| Compound Binary File (.doc etc.) | D0 CF 11 E0 A1 B1 1A E1 |     0M8R4KGxGu |
+| Gzip                             | 1F 8B 08                |           H4sI |
+
+### Encoded
+Fields of Interest:
+- event.code: *1*
+- winlog.event_data.CommandLine: (-Encodedcommand or -Enc or -eNco or -^e^C^ or -ec)
+- event.code: *4104*
+- winlog.event_data.ScriptBlockText: (*xor* or *char* or *join* or *ToInt* or *ToDecimal* or *ToString*)
+
+### Download
+- event.code: *4104*
+- winlog.event_data.ScriptBlockText:(*WebClient* OR *DownloadData* OR *DownloadFile* OR *DownloadString* OR *OpenRead* OR *WebRequest* OR *curl* OR *wget* OR *RestMethod* OR *WinHTTP* OR *InternetExplorer.Application* OR *Excel.Application* OR *Word.Application* OR *Msxml2.XMLHTTP* OR *MsXML2.ServerXML* OR *System.XML.XMLDocument* OR *BitsTransfer*)
+
+### Execute-Assembly
+- winlog.event_data.ScriptBlockText: *Reflection.Assembly* or *Load* or *ReadAllBytes* 
