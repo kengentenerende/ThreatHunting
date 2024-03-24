@@ -2197,6 +2197,10 @@ Fields of Interest:
 ### Compression
 - winlog.event_data.ScriptBlockText: *decompress*
 
+- [Base64 Encoded File Signatures](https://malware.news/t/base64-encoded-file-signatures/27375)
+**File Signatures**
+File signatures, aka 'magic bytes' or 'file headers', are static bytes that appear at the start of files.
+
 | File type                        | File Signature          | Base64Encoding |
 |----------------------------------|-------------------------|---------------:|
 | DOS Executable                   | MZ                      |             TV |
@@ -2206,6 +2210,20 @@ Fields of Interest:
 | Rich Text Format                 | {\rtf                   |         e1xydG |
 | Compound Binary File (.doc etc.) | D0 CF 11 E0 A1 B1 1A E1 |     0M8R4KGxGu |
 | Gzip                             | 1F 8B 08                |           H4sI |
+
+**Common Script Elements**
+These script elements are common leading commands that can be encountered during script analysis.
+| Script Element | Base64 Encoding |
+|----------------|-----------------|
+| http           | aHR0c           |
+| $\x00          | JA              |
+| iex (          | aWV4IC          |
+| cmd.exe /      | Y21kLmV4ZSAv    |
+| certutil       | Y2VydHV0aW      |
+| wscript        | d3Njcmlwd       |
+| schtasks       | c2NodGFza3      |
+| eval           | ZXZhb           |
+
 
 ### Encoded
 Fields of Interest:
