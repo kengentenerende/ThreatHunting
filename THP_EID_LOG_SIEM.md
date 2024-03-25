@@ -2063,6 +2063,188 @@ Go to Dashboard and add all of your visualized charts.
 Note: On the search bar part, you may see there's a **KQL** there. KQL stands for
 Kibana Query Language. Make sure to enable KQL for every session for better search usage.
 
+# Intel-driven Threat Hunting
+- [mitre_attack_xml_eventlogs](https://github.com/BoredHackerBlog/mitre_attack_xml_eventlogs/tree/db5699e016a223c31d34a6d3024ac9cd33d87f52?tab=readme-ov-file) - MITRE ATTACK evtx samples from EVTX-to-MITRE-Attack & EVTX-ATTACK-SAMPLES repos in XML format
+- [EVTX-ATTACK-SAMPLES](https://github.com/Lichtsinnig/EVTX-ATTACK-SAMPLES/tree/57395181405d5e3e91edfb70c7ffefad4fcfc04f) - This is a container for windows events samples associated to specific attack and post-exploitation techniques
+- [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) - Atomic Red Team is a library of tests mapped to the MITRE ATT&CK® framework. Security teams can use Atomic Red Team to quickly, portably, and reproducibly test their environments.
+
+## Execution: Rundll32
+Fields of Interest:
+
+- process.name: `rundll32.exe`
+- process.args:`*pcwutl.dll*` `*LaunchApplication*`
+- process.args:`("*\\rundll32.exe* url.dll,*OpenURL *" "*\\rundll32.exe* url.dll,*OpenURLA *" "*\\rundll32.exe* url.dll,*FileProtocolHandler *" "*\\rundll32.exe* zipfldr.dll,*RouteTheCall *" "*\\rundll32.exe* Shell32.dll,*Control_RunDLL *" "*\\rundll32.exe javascript\:*" "* url.dll,*OpenURL *" "* url.dll,*OpenURLA *" "* url.dll,*FileProtocolHandler *" "* zipfldr.dll,*RouteTheCall *" "* Shell32.dll,*Control_RunDLL *" "* javascript\:*" "*.RegisterXLL*")`
+
+Reference:
+- [win_susp_rundll32_activity.yml](https://gist.github.com/curi0usJack/14d1b2062691c0a50c4dae6f29001107)
+
+## Execution: URL.dll/IEFrame.dll
+Fields of Interest:
+
+- event.code: `*1*` 
+- winlog.event_data.ParentImage
+- process.name: `rundll32.exe`
+- process.args:`(url.dll OR ieframe.dll)` AND `(FileProtocolHandler OR OpenURLA)`
+
+## Execution: Pcwutl
+Fields of Interest:
+
+- event.code: `*1*` 
+- winlog.event_data.ParentImage
+- process.name: `rundll32.exe`
+- process.args:`*pcwutl.dll*` `*LaunchApplication*`
+
+Reference:
+- [LOLBIN - Pcwutl.dll](https://lolbas-project.github.io/lolbas/Libraries/Pcwutl/)
+
+## Execution: Squiblydoo
+Fields of Interest:
+
+- event.code: `*1*` 
+- winlog.event_data.ParentImage
+- winlog.event_data.ParentCommandLine: `*scrobj*` `*regsvr32*`
+- winlog.event_data.Image
+- winlog.event_data.CommandLine: `*scrobj*` `*regsvr32*`
+- agent.hostname
+- winlog.computer_name
+
+## Execution: Mshta
+
+- event.code: `*1*` 
+- winlog.event_data.ParentImage
+- process.name: `rundll32.exe`
+- process.args:`*mshtml*` `*RunHTMLApplication*`
+
+## Persistence: DCSync Attack
+Fields of Interest:
+
+An operation was performed on an object (Windows Security)
+- event.code: `*4662*` 
+- AccessMask: `*0x100*`
+- OperationProperties:
+  - `*1131f6ad-9c07-11d1-f79f-00c04fc2dcd2*`
+  - `*1131f6aa-9c07-11d1-f79f-00c04fc2dcd2*`
+  - `*9923a32a-3607-11d2-b9be-0000f87a36b2*`
+  - `*89e95b76-444d-4c62-991a-0facbeda640c*`
+- SubjectUserName|endswith: `NOT *$*`
+
+Reference:
+- [DCSync Detection, Exploitation, and Detection](https://www.linkedin.com/pulse/dcsync-detection-exploitation-debashis-pal/)
+- [Detects Mimikatz DC sync security events](https://github.com/SigmaHQ/sigma/blob/961932ee3fa9751c8f91599b70ede33bc72d90eb/rules/windows/builtin/security/win_security_dcsync.yml#L26)
+
+## Persistence: BitsAdmin
+Key Indicators
+- **EventID 3** - A bits job was created
+- **EventID 59** - A bits job was started
+- **EventID 60** - A Bits job was stopped
+
+Fields of Interest:
+
+- event.code: `*3*` OR `*59*` OR `*60*`
+- channel
+- event.action: `*BITS*`
+- bytesTransferred
+- url
+- message
+
+## Privelege Escalation: UAC Bypass Using SDCLT.EXE
+Fields of Interest:
+
+Registry (Sysmon)
+- event.code: `*13*` 
+- registry.key.path: `*IsolatedCommand*`
+- registry.key.value: 
+
+Process (Sysmon)
+- event.code: `*1*` 
+- process.parent.executable
+- process.parent.args
+- registry.key.path: 
+- process.executable: 
+- process.args: `*sdclt.exe*` `*/Kickoffelev*`
+
+Reference:
+- ["FILELESS" UAC BYPASS USING SDCLT.EXE](https://enigma0x3.net/2017/03/17/fileless-uac-bypass-using-sdclt-exe/)
+- [Bypasses UAC by hijacking the "IsolatedCommand" value in "shell\runas\command"](https://github.com/enigma0x3/Misc-PowerShell-Stuff/blob/master/Invoke-SDCLTBypass.ps1)
+
+
+## Privilege Escalation: UAC Bypass Using cliconfg (DLL - NTWDBLIB.dll)
+Fields of Interest:
+
+FileCreate or ModuleLoad(Sysmon)
+- event.code: `*11*` OR `*7*` 
+- file.path: `NTWDBLIB.dll`
+- process.executable: 
+
+
+## Privilege Escalation: UAC Bypass using CompMgmtLauncher
+Identifies use of CompMgmtLauncher.exe to bypass User Account Control. Adversaries use this technique to execute privileged processes.
+
+Fields of Interest:
+
+Registry (Sysmon)
+- event.code: `*13*` 
+- registry.key.path: `"\\mscfile\\shell\\open\\command"`
+- registry.key.value: 
+- event.action
+
+Process (Sysmon)
+- event.code: `*1*` 
+- process.parent.executable
+- process.parent.args
+- registry.key.path: 
+- process.executable: 
+- process.args: `*CompMgmtLauncher.exe*`
+- event.action
+
+Reference:
+[Bypass UAC via CompMgmtLauncher](https://eqllib.readthedocs.io/en/latest/analytics/7efc7afe-8396-4bf0-ac7d-1a860a401d22.html)
+
+
+## Defense Evasion: Log Tampering
+Fields of Interest:
+
+- event.code: `*104*` or `*1102*`
+- Time
+- winlog.computer_name
+- winlog.channel
+- agent.hostname / host.name
+- user.name
+
+
+## Defense Evasion: RDP Settings Tampering
+Fields of Interest:
+
+- event.code: `*1*`
+- file.path: `*netsh*`
+- process.args: `*netsh*` `*advfirewall*` `*localport=3389*` `*action=allow*`
+
+Reference:
+- [RDP Wrapper Library by Stas'M](https://github.com/stascorp/rdpwrap)
+
+```
+C:\Users\IEUser\Desktop\RDPWrap-v1.6.2\RDPWInst, -i, -o
+```
+```
+netsh, advfirewall, firewall, add, rule, name=Remote Desktop, dir=in, protocol=tcp, localport=3389, profile=any, action=allow
+```
+
+## Defense Evasion: Java DLL Sideloading
+**Key Indicators**
+
+When analyzing Sysmon logs, look for indications of Java programs with interesting behavior such as:
+- executing from a directory other than the Java home directory
+- loading legitimate DLL from an other-than-expected path
+- script processes spawning an unsigned binary
+- Service Host process (svchost.exe) spawned by an unexpected parent
+- exporting registry hives
+
+Look for the following Sysmon events:
+- **Event ID 1** - A process was created
+- **Event ID 7** - A module was loaded
+- **Event ID 8** - A remote thread was created
+- **Event ID 13** - A registry value was modified
+
 
 ## Credential Attack
 Fields of Interest:
@@ -2138,17 +2320,6 @@ Fields of Interest:
 - agent.hostname / host.name
 - winlog.user.name
 
-## Squiblydoo
-Fields of Interest:
-
-- event.code: *1* 
-- winlog.event_data.ParentImage
-- winlog.event_data.ParentCommandLine: `*scrobj*` `*regsvr32*`
-- winlog.event_data.Image
-- winlog.event_data.CommandLine: `*scrobj*` `*regsvr32*`
-- agent.hostname
-- winlog.computer_name
-
 ## Spearphishing Attachment / MalDoc
 Fields of Interest:
 
@@ -2170,16 +2341,6 @@ Fields of Interest:
 - process.executable: `*vssadmin*`
 - process.command_line: `*vssadmin*` `*delete*` `*shadows*` 
 - agent.hostname / host.name
-
-## Log Tampering
-Fields of Interest:
-
-- event.code: `*104*` or `*1102*`
-- Time
-- winlog.computer_name
-- winlog.channel
-- agent.hostname / host.name
-- user.name
 
 ## Powershell Generic
 Fields of Interest:
@@ -2242,16 +2403,6 @@ ScriptBlockText Logging (Powershell)
 ### Execute-Assembly
 - winlog.event_data.ScriptBlockText: `*Reflection.Assembly* or *Load* or *ReadAllBytes*`
 
-## Rundll32
-Fields of Interest:
-
-- process.name: `rundll32.exe`
-- process.args:`*pcwutl.dll*` `*LaunchApplication*`
-- process.args:`("*\\rundll32.exe* url.dll,*OpenURL *" "*\\rundll32.exe* url.dll,*OpenURLA *" "*\\rundll32.exe* url.dll,*FileProtocolHandler *" "*\\rundll32.exe* zipfldr.dll,*RouteTheCall *" "*\\rundll32.exe* Shell32.dll,*Control_RunDLL *" "*\\rundll32.exe javascript\:*" "* url.dll,*OpenURL *" "* url.dll,*OpenURLA *" "* url.dll,*FileProtocolHandler *" "* zipfldr.dll,*RouteTheCall *" "* Shell32.dll,*Control_RunDLL *" "* javascript\:*" "*.RegisterXLL*")`
-
-Reference:
-- [win_susp_rundll32_activity.yml](https://gist.github.com/curi0usJack/14d1b2062691c0a50c4dae6f29001107)
-
 ## UAC Bypass 
 Fields of Interest:
 
@@ -2266,39 +2417,6 @@ Reference:
 - https://github.com/vaginessa/WinPwnage-2
 
 
-## RDP Settings Tampering
-Fields of Interest:
-
-- event.code: `*1*`
-- file.path: `*netsh*`
-- process.args: `*netsh*` `*advfirewall*` `*localport=3389*` `*action=allow*`
-
-Reference:
-- [RDP Wrapper Library by Stas'M](https://github.com/stascorp/rdpwrap)
-
-```
-C:\Users\IEUser\Desktop\RDPWrap-v1.6.2\RDPWInst, -i, -o
-```
-```
-netsh, advfirewall, firewall, add, rule, name=Remote Desktop, dir=in, protocol=tcp, localport=3389, profile=any, action=allow
-```
-
-## DCSync Attack
-Fields of Interest:
-
-An operation was performed on an object (Windows Security)
-- event.code: `*4662*` 
-- AccessMask: `*0x100*`
-- OperationProperties:
-  - `*1131f6ad-9c07-11d1-f79f-00c04fc2dcd2*`
-  - `*1131f6aa-9c07-11d1-f79f-00c04fc2dcd2*`
-  - `*9923a32a-3607-11d2-b9be-0000f87a36b2*`
-  - `*89e95b76-444d-4c62-991a-0facbeda640c*`
-- SubjectUserName|endswith: `NOT *$*`
-
-Reference:
-- [DCSync Detection, Exploitation, and Detection](https://www.linkedin.com/pulse/dcsync-detection-exploitation-debashis-pal/)
-- [Detects Mimikatz DC sync security events](https://github.com/SigmaHQ/sigma/blob/961932ee3fa9751c8f91599b70ede33bc72d90eb/rules/windows/builtin/security/win_security_dcsync.yml#L26)
 
 ## Possible Remote WMI Abuse - Mimikatz (Remote Login)
 Fields of Interest:
@@ -2327,7 +2445,7 @@ File Create (Sysmon)
 - file.path: `C:\Windows\System32\Tasks\{NameOfTask}`
 
 Registry (Windows Security)
-- event.code: `*4688`* or `*4699*`
+- event.code: `*4698*` or `*4699*`
 - task.name
 - host.name
 - user.name
@@ -2359,22 +2477,3 @@ insecure commonly used paths):
 8. powershell.exe
 ```
 
-## *FILELESS* UAC Bypass Using SDCLT.EXE
-Fields of Interest:
-
-Registry (Sysmon)
-- event.code: `*13*` 
-- registry.key.path: `*IsolatedCommand*`
-- registry.key.value: 
-
-Process (Sysmon)
-- event.code: `*1*` 
-- process.parent.executable
-- process.parent.args
-- registry.key.path: 
-- process.executable: 
-- process.args: `*sdclt.exe*` `*/Kickoffelev*`
-
-Reference:
-- ["FILELESS" UAC BYPASS USING SDCLT.EXE](https://enigma0x3.net/2017/03/17/fileless-uac-bypass-using-sdclt-exe/)
-- [Bypasses UAC by hijacking the "IsolatedCommand" value in "shell\runas\command"](https://github.com/enigma0x3/Misc-PowerShell-Stuff/blob/master/Invoke-SDCLTBypass.ps1)
