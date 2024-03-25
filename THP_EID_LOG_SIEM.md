@@ -2067,7 +2067,7 @@ Kibana Query Language. Make sure to enable KQL for every session for better sear
 ## Credential Attack
 Fields of Interest:
 
-- event.code: **4625**
+- event.code: `*4625*`
 - Time
 - agent.name / winlog.computer_name
 - user.name
@@ -2079,9 +2079,9 @@ Fields of Interest:
 ## Remote Login Sessions
 Fields of Interest:
 
-- event.code: **4624** (Logon Successful)
-- event.code: **4625** (Failed Logon)
-- winlog.event_data.LogonType: **10**
+- event.code: `*4624* (Logon Successful)`
+- event.code: `*4625* (Failed Logon)`
+- winlog.event_data.LogonType: `*10*`
 - Time
 - agent.name / winlog.computer_name
 - user.name
@@ -2090,7 +2090,7 @@ Fields of Interest:
 ## Network Monitoring IP
 Fields of Interest:
 
-- event.code: **3**
+- event.code: `*3*`
 - Time	
 - agent.name	
 - agent.hostname / host.name
@@ -2102,7 +2102,7 @@ Fields of Interest:
 ## Network Monitoring Domain
 Fields of Interest:
 
-- event.code: **3**
+- event.code: `*3*`
 - Time	
 - agent.name	
 - winlog.computer_name	
@@ -2117,11 +2117,11 @@ Fields of Interest:
 ## Credential Dumping
 Fields of Interest:
 
-- event.code: *1* or *4688*
+- event.code: `*1*` or `*4688*`
 - Time 
 - process.parent.executable 
 - process.executable
-- process.parent.command_line: *.dmp* *lssas*
+- process.parent.command_line: `*.dmp*` `*lssas*`
 - process.command_line 
 - agent.hostname / host.name
 - winlog.user.name
@@ -2129,11 +2129,11 @@ Fields of Interest:
 ## Credential Dumping thru Fileless Attack
 Fields of Interest:
 
-- event.code: *1* or *4688*
+- event.code: `*1*` or `*4688*`
 - Time 
 - process.parent.executable 
 - process.executable
-- process.parent.command_line: **mimikatz* *DumpCreds*
+- process.parent.command_line: `*mimikatz*` `*DumpCreds*`
 - process.command_line 
 - agent.hostname / host.name
 - winlog.user.name
@@ -2143,18 +2143,18 @@ Fields of Interest:
 
 - event.code: *1* 
 - winlog.event_data.ParentImage
-- winlog.event_data.ParentCommandLine: *scrobj* *regsvr32*
+- winlog.event_data.ParentCommandLine: `*scrobj*` `*regsvr32*`
 - winlog.event_data.Image
-- winlog.event_data.CommandLine: *scrobj* *regsvr32*
+- winlog.event_data.CommandLine: `*scrobj*` `*regsvr32*`
 - agent.hostname
 - winlog.computer_name
 
 ## Spearphishing Attachment / MalDoc
 Fields of Interest:
 
-- event.code: *1* or *4688*
-- process.parent.executable : *winword.exe*
-- process.executable : *powershell.exe* OR *cmd.exe*
+- event.code: `*1*` or `*4688*`
+- process.parent.executable : `*winword.exe*`
+- process.executable : `*powershell.exe* OR *cmd.exe*`
 - Time
 - winlog.computer_name
 - winlog.user.name
@@ -2163,18 +2163,18 @@ Fields of Interest:
 ## Vssadmin Abuse
 Fields of Interest:
 
-- event.code: *1* or *4688*
+- event.code: `*1*` or `*4688*`
 - Time
 - process.working_directory 
-- process.parent.executable: *cmd* 
-- process.executable: *vssadmin*
-- process.command_line: *vssadmin* *delete* *shadows* 
+- process.parent.executable: `*cmd*`
+- process.executable: `*vssadmin*`
+- process.command_line: `*vssadmin*` `*delete*` `*shadows*` 
 - agent.hostname / host.name
 
 ## Log Tampering
 Fields of Interest:
 
-- event.code: *104* or *1102*
+- event.code: `*104*` or `*1102*`
 - Time
 - winlog.computer_name
 - winlog.channel
@@ -2184,7 +2184,7 @@ Fields of Interest:
 ## Powershell Generic
 Fields of Interest:
 
-- event.code: *4104*
+- event.code: `*4104*`
 - Time
 - winlog.event_data.ScriptBlockText: 
 - winlog.event_id
@@ -2195,7 +2195,8 @@ Fields of Interest:
 - winlog.event_data.ScriptBlockText: (PowerUp OR Mimikatz OR NinjaCopy OR Get-ModifiablePath OR AllChecks OR AmsiBypass OR PsUACme OR Invoke-DLLInjection OR Invoke-ReflectivePEInjection OR Invoke-Shellcode OR Get-GPPPassword OR Get-Keystrokes OR Get-TimedScreenshot OR PowerView)
 
 ### Compression
-- winlog.event_data.ScriptBlockText: *decompress*
+- event.code: `*4104*`
+- winlog.event_data.ScriptBlockText: `*decompress*`
 
 - [Base64 Encoded File Signatures](https://malware.news/t/base64-encoded-file-signatures/27375)
 **File Signatures**
@@ -2226,25 +2227,27 @@ These script elements are common leading commands that can be encountered during
 
 
 ### Encoded
-Fields of Interest:
-- event.code: *1*
-- winlog.event_data.CommandLine: (-Encodedcommand or -Enc or -eNco or -^e^C^ or -ec)
-- event.code: *4104*
-- winlog.event_data.ScriptBlockText: (*xor* or *char* or *join* or *ToInt* or *ToDecimal* or *ToString*)
+Process (Sysmon)
+- event.code: `*1*`
+- winlog.event_data.CommandLine: `(-Encodedcommand or -Enc or -eNco or -^e^C^ or -ec)`
+
+ScriptBlockText Logging (Powershell)
+- event.code: `*4104*`
+- winlog.event_data.ScriptBlockText: `(*xor* or *char* or *join* or *ToInt* or *ToDecimal* or *ToString*)`
 
 ### Download
 - event.code: *4104*
-- winlog.event_data.ScriptBlockText:(*WebClient* OR *DownloadData* OR *DownloadFile* OR *DownloadString* OR *OpenRead* OR *WebRequest* OR *curl* OR *wget* OR *RestMethod* OR *WinHTTP* OR *InternetExplorer.Application* OR *Excel.Application* OR *Word.Application* OR *Msxml2.XMLHTTP* OR *MsXML2.ServerXML* OR *System.XML.XMLDocument* OR *BitsTransfer*)
+- winlog.event_data.ScriptBlockText: `(*WebClient* OR *DownloadData* OR *DownloadFile* OR *DownloadString* OR *OpenRead* OR *WebRequest* OR *curl* OR *wget* OR *RestMethod* OR *WinHTTP* OR *InternetExplorer.Application* OR *Excel.Application* OR *Word.Application* OR *Msxml2.XMLHTTP* OR *MsXML2.ServerXML* OR *System.XML.XMLDocument* OR *BitsTransfer*)`
 
 ### Execute-Assembly
-- winlog.event_data.ScriptBlockText: *Reflection.Assembly* or *Load* or *ReadAllBytes* 
+- winlog.event_data.ScriptBlockText: `*Reflection.Assembly* or *Load* or *ReadAllBytes*`
 
 ## Rundll32
 Fields of Interest:
 
-- process.name:rundll32.exe
-- process.args:*pcwutl.dll* *LaunchApplication*)
-- process.args:("*\\rundll32.exe* url.dll,*OpenURL *" "*\\rundll32.exe* url.dll,*OpenURLA *" "*\\rundll32.exe* url.dll,*FileProtocolHandler *" "*\\rundll32.exe* zipfldr.dll,*RouteTheCall *" "*\\rundll32.exe* Shell32.dll,*Control_RunDLL *" "*\\rundll32.exe javascript\:*" "* url.dll,*OpenURL *" "* url.dll,*OpenURLA *" "* url.dll,*FileProtocolHandler *" "* zipfldr.dll,*RouteTheCall *" "* Shell32.dll,*Control_RunDLL *" "* javascript\:*" "*.RegisterXLL*"))
+- process.name: `rundll32.exe`
+- process.args:`*pcwutl.dll*` `*LaunchApplication*)`
+- process.args:`("*\\rundll32.exe* url.dll,*OpenURL *" "*\\rundll32.exe* url.dll,*OpenURLA *" "*\\rundll32.exe* url.dll,*FileProtocolHandler *" "*\\rundll32.exe* zipfldr.dll,*RouteTheCall *" "*\\rundll32.exe* Shell32.dll,*Control_RunDLL *" "*\\rundll32.exe javascript\:*" "* url.dll,*OpenURL *" "* url.dll,*OpenURLA *" "* url.dll,*FileProtocolHandler *" "* zipfldr.dll,*RouteTheCall *" "* Shell32.dll,*Control_RunDLL *" "* javascript\:*" "*.RegisterXLL*"))`
 
 Reference:
 - [win_susp_rundll32_activity.yml](https://gist.github.com/curi0usJack/14d1b2062691c0a50c4dae6f29001107)
@@ -2253,8 +2256,8 @@ Reference:
 Fields of Interest:
 
 - event.code: *7* 
-- file.path: *ntwdblib.dll*
-- process.executable: *\system32\cliconfg.exe*
+- file.path: `*ntwdblib.dll*`
+- process.executable: ``*\system32\cliconfg.exe*``
 
 ```
 python, winpwnage.py, -u, uac, -i, 11, -p, c:\Users\IEUser\Desktop\hellox86.dll
@@ -2266,9 +2269,9 @@ Reference:
 ## RDP Settings Tampering
 Fields of Interest:
 
-- event.code: *1* 
-- file.path: *netsh*
-- process.args:*netsh* *advfirewall* *localport=3389* *action=allow*)
+- event.code: `*1*`
+- file.path: `*netsh*`
+- process.args: `*netsh*` `*advfirewall*` `*localport=3389*` `*action=allow*`
 
 Reference:
 - [RDP Wrapper Library by Stas'M](https://github.com/stascorp/rdpwrap)
@@ -2283,14 +2286,15 @@ netsh, advfirewall, firewall, add, rule, name=Remote Desktop, dir=in, protocol=t
 ## DCSync Attack
 Fields of Interest:
 
-- event.code: *4662* 
-- AccessMask: *0x100*
+An operation was performed on an object (Windows Security)
+- event.code: `*4662*` 
+- AccessMask: `*0x100*`
 - OperationProperties:
-  - *1131f6ad-9c07-11d1-f79f-00c04fc2dcd2*
-  - *1131f6aa-9c07-11d1-f79f-00c04fc2dcd2*
-  - *9923a32a-3607-11d2-b9be-0000f87a36b2*
-  - *89e95b76-444d-4c62-991a-0facbeda640c*
-- SubjectUserName|endswith: **NOT** *$*
+  - `*1131f6ad-9c07-11d1-f79f-00c04fc2dcd2*`
+  - `*1131f6aa-9c07-11d1-f79f-00c04fc2dcd2*`
+  - `*9923a32a-3607-11d2-b9be-0000f87a36b2*`
+  - `*89e95b76-444d-4c62-991a-0facbeda640c*`
+- SubjectUserName|endswith: `NOT *$*`
 
 Reference:
 - [DCSync Detection, Exploitation, and Detection](https://www.linkedin.com/pulse/dcsync-detection-exploitation-debashis-pal/)
@@ -2299,44 +2303,77 @@ Reference:
 ## Possible Remote WMI Abuse - Mimikatz (Remote Login)
 Fields of Interest:
 
-- event.code: *4648* 
+A logon was attempted using explicit credentials (Windows Security)
+- event.code: `*4648*`
 - Account.Name
 - Account.Domain
-- process.executable: *C:\Windows\System32\svchost.exe*
-- process.executable: *C:\Windows\System32\wbem\WMIC.exe*
+- process.executable: `*C:\Windows\System32\svchost.exe*`
+- process.executable: `*C:\Windows\System32\wbem\WMIC.exe*`
 
 [Tool Analysis Result Sheet](https://jpcertcc.github.io/ToolAnalysisResultSheet/details/RemoteLogin-Mimikatz.htm)
 
-## Persistence through Scheduled Tasks
+## Persistence through Short Time Scheduled Tasks
 Fields of Interest:
 
-Process
-- event.code: *1* 
+Process (Sysmon)
+- event.code: `*1* `
 - process.parent.executable
 - process.parent.args
-- process.executable: *schtasks.exe*
-- process.args: *schtasks*
+- process.executable: `*schtasks.exe*`
+- process.args: `*schtasks*`
 
-File Create
-- event.code: *11* 
-- file.path: C:\Windows\System32\Tasks\{NameOfTask}
+File Create (Sysmon)
+- event.code: `*11*`
+- file.path: `C:\Windows\System32\Tasks\{NameOfTask}`
 
+Registry (Windows Security)
+- event.code: `*4688`* or `*4699*`
+- task.name
+- host.name
+- user.name
+- event.action
+- message
+
+**OTHER INDICATORS** 
+
+Tasks running scripts or programs from temp directories or insecure locations (writable by any user) are a good indicator for initial (malware just landed) execution/persistence via
+scheduled tasks, includes but not limited to the following locations:
+```
+1. c: \users\*
+2. c:\programdata\*
+3. c:\windows\temp\*
+```
+
+For scripting utilities pay attention to tasks with action set to one
+of the following (inspect the arguments if they point to the below
+insecure commonly used paths):
+
+```
+1. cscript.exe
+5. wmic.exe
+2. wscript.exe
+6. cmd.exe
+3. rundl132.exe
+7. mshta.exe
+4. regsvr32.exe
+8. powershell.exe
+```
 
 ## *FILELESS* UAC Bypass Using SDCLT.EXE
 Fields of Interest:
 
-Registry
-- event.code: *13* 
-- registry.key.path: *IsolatedCommand*
+Registry (Sysmon)
+- event.code: `*13*` 
+- registry.key.path: `*IsolatedCommand*`
 - registry.key.value: 
 
-Process
-- event.code: *1* 
+Process (Sysmon)
+- event.code: `*1*` 
 - process.parent.executable
 - process.parent.args
 - registry.key.path: 
 - process.executable: 
-- process.args: *sdclt.exe* */Kickoffelev*
+- process.args: `*sdclt.exe*` `*/Kickoffelev*`
 
 Reference:
 - ["FILELESS" UAC BYPASS USING SDCLT.EXE](https://enigma0x3.net/2017/03/17/fileless-uac-bypass-using-sdclt-exe/)
