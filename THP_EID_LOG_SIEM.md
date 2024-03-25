@@ -2238,3 +2238,89 @@ Fields of Interest:
 
 ### Execute-Assembly
 - winlog.event_data.ScriptBlockText: *Reflection.Assembly* or *Load* or *ReadAllBytes* 
+
+## Rundll32
+process.name:rundll32.exe
+process.args:*pcwutl.dll* *LaunchApplication*)
+
+Reference:
+- [win_susp_rundll32_activity.yml](https://gist.github.com/curi0usJack/14d1b2062691c0a50c4dae6f29001107)
+
+## UAC Bypass 
+Fields of Interest:
+
+- event.code: *7* 
+- file.path: *ntwdblib.dll*
+- process.executable: *\system32\cliconfg.exe*
+
+```
+python, winpwnage.py, -u, uac, -i, 11, -p, c:\Users\IEUser\Desktop\hellox86.dll
+```
+Reference:
+- https://github.com/vaginessa/WinPwnage-2
+
+
+## RDP Settings Tampering
+Fields of Interest:
+
+- event.code: *1* 
+- file.path: *netsh*
+- process.args:*netsh* *advfirewall* *localport=3389* *action=allow*)
+
+Reference:
+- [RDP Wrapper Library by Stas'M](https://github.com/stascorp/rdpwrap)
+
+```
+C:\Users\IEUser\Desktop\RDPWrap-v1.6.2\RDPWInst, -i, -o
+```
+```
+netsh, advfirewall, firewall, add, rule, name=Remote Desktop, dir=in, protocol=tcp, localport=3389, profile=any, action=allow
+```
+
+## DCSync Attack
+Fields of Interest:
+
+- event.code: *4662* 
+- AccessMask: *0x100*
+- OperationProperties:
+  - *1131f6ad-9c07-11d1-f79f-00c04fc2dcd2*
+  - *1131f6aa-9c07-11d1-f79f-00c04fc2dcd2*
+  - *9923a32a-3607-11d2-b9be-0000f87a36b2*
+  - *89e95b76-444d-4c62-991a-0facbeda640c*
+- SubjectUserName|endswith: **NOT** *$*
+
+Reference:
+- [DCSync Detection, Exploitation, and Detection](https://www.linkedin.com/pulse/dcsync-detection-exploitation-debashis-pal/)
+- [Detects Mimikatz DC sync security events](https://github.com/SigmaHQ/sigma/blob/961932ee3fa9751c8f91599b70ede33bc72d90eb/rules/windows/builtin/security/win_security_dcsync.yml#L26)
+
+## Possible Remote WMI Abuse - Mimikatz (Remote Login)
+Fields of Interest:
+
+- event.code: *4648* 
+- Account.Name
+- Account.Domain
+- process.executable: *C:\Windows\System32\svchost.exe*
+- process.executable: *C:\Windows\System32\wbem\WMIC.exe*
+
+[Tool Analysis Result Sheet](https://jpcertcc.github.io/ToolAnalysisResultSheet/details/RemoteLogin-Mimikatz.htm)
+
+## Persistence through Scheduled Tasks
+Fields of Interest:
+
+- event.code: *1* 
+- process.parent.executable
+- process.parent.args
+- process.executable: *schtasks.exe*
+- process.name: *schtasks*
+
+- event.code: *11* 
+- file.path: C:\Windows\System32\Tasks\{NameOfTask}
+- process.name: *schtasks*
+
+## FILELESS” UAC Bypass Using SDCLT.EXE
+
+- event.code: *13* 
+- registry.key.path: *IsolatedCommand*
+- registry.key.value: 
+
+["FILELESS" UAC BYPASS USING SDCLT.EXE](https://enigma0x3.net/2017/03/17/fileless-uac-bypass-using-sdclt-exe/)
