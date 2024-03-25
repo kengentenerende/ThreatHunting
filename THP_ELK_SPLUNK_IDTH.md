@@ -85,6 +85,64 @@ Fields of Interest:
 - process.name: `rundll32.exe`
 - process.args:`*mshtml*` `*RunHTMLApplication*`
 
+## Execution: Spearphishing Attachment / MalDoc
+Fields of Interest:
+
+- event.code: `*1*` or `*4688*`
+- process.parent.executable : `*winword.exe*`
+- process.executable : `*powershell.exe* OR *cmd.exe*`
+- Time
+- winlog.computer_name
+- winlog.user.name
+- agent.hostname / host.name
+
+## Persistence: Short Time Scheduled Tasks
+Fields of Interest:
+
+Process (Sysmon)
+- event.code: `*1* `
+- process.parent.executable
+- process.parent.args
+- process.executable: `*schtasks.exe*`
+- process.args: `*schtasks*`
+
+File Create (Sysmon)
+- event.code: `*11*`
+- file.path: `C:\Windows\System32\Tasks\{NameOfTask}`
+
+Registry (Windows Security)
+- event.code: `*4698*` or `*4699*`
+- task.name
+- host.name
+- user.name
+- event.action
+- message
+
+**OTHER INDICATORS** 
+
+Tasks running scripts or programs from temp directories or insecure locations (writable by any user) are a good indicator for initial (malware just landed) execution/persistence via
+scheduled tasks, includes but not limited to the following locations:
+```
+1. c: \users\*
+2. c:\programdata\*
+3. c:\windows\temp\*
+```
+
+For scripting utilities pay attention to tasks with action set to one
+of the following (inspect the arguments if they point to the below
+insecure commonly used paths):
+
+```
+1. cscript.exe
+5. wmic.exe
+2. wscript.exe
+6. cmd.exe
+3. rundl132.exe
+7. mshta.exe
+4. regsvr32.exe
+8. powershell.exe
+```
+
 ## Persistence: DCSync Attack
 Fields of Interest:
 
@@ -469,6 +527,17 @@ A logon was attempted using explicit credentials (Windows Security)
 
 [Tool Analysis Result Sheet](https://jpcertcc.github.io/ToolAnalysisResultSheet/details/RemoteLogin-Mimikatz.htm)
 
+## Impact: Inhibit System Recovery - Vssadmin 
+Fields of Interest:
+
+- event.code: `*1*` or `*4688*`
+- Time
+- process.working_directory 
+- process.parent.executable: `*cmd*`
+- process.executable: `*vssadmin*`
+- process.command_line: `*vssadmin*` `*delete*` `*shadows*` 
+- agent.hostname / host.name
+
 ## Credential Attack
 Fields of Interest:
 
@@ -518,29 +587,6 @@ Fields of Interest:
 - source.port	
 - destination.ip	
 - destination.port
-
-
-## Spearphishing Attachment / MalDoc
-Fields of Interest:
-
-- event.code: `*1*` or `*4688*`
-- process.parent.executable : `*winword.exe*`
-- process.executable : `*powershell.exe* OR *cmd.exe*`
-- Time
-- winlog.computer_name
-- winlog.user.name
-- agent.hostname / host.name
-
-## Vssadmin Abuse
-Fields of Interest:
-
-- event.code: `*1*` or `*4688*`
-- Time
-- process.working_directory 
-- process.parent.executable: `*cmd*`
-- process.executable: `*vssadmin*`
-- process.command_line: `*vssadmin*` `*delete*` `*shadows*` 
-- agent.hostname / host.name
 
 ## Powershell Generic
 Fields of Interest:
@@ -602,51 +648,4 @@ ScriptBlockText Logging (Powershell)
 
 ### Execute-Assembly
 - winlog.event_data.ScriptBlockText: `*Reflection.Assembly* or *Load* or *ReadAllBytes*`
-
-## Persistence through Short Time Scheduled Tasks
-Fields of Interest:
-
-Process (Sysmon)
-- event.code: `*1* `
-- process.parent.executable
-- process.parent.args
-- process.executable: `*schtasks.exe*`
-- process.args: `*schtasks*`
-
-File Create (Sysmon)
-- event.code: `*11*`
-- file.path: `C:\Windows\System32\Tasks\{NameOfTask}`
-
-Registry (Windows Security)
-- event.code: `*4698*` or `*4699*`
-- task.name
-- host.name
-- user.name
-- event.action
-- message
-
-**OTHER INDICATORS** 
-
-Tasks running scripts or programs from temp directories or insecure locations (writable by any user) are a good indicator for initial (malware just landed) execution/persistence via
-scheduled tasks, includes but not limited to the following locations:
-```
-1. c: \users\*
-2. c:\programdata\*
-3. c:\windows\temp\*
-```
-
-For scripting utilities pay attention to tasks with action set to one
-of the following (inspect the arguments if they point to the below
-insecure commonly used paths):
-
-```
-1. cscript.exe
-5. wmic.exe
-2. wscript.exe
-6. cmd.exe
-3. rundl132.exe
-7. mshta.exe
-4. regsvr32.exe
-8. powershell.exe
-```
 
