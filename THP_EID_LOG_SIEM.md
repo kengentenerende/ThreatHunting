@@ -2130,6 +2130,37 @@ An operation was performed on an object (Windows Security)
   - `*89e95b76-444d-4c62-991a-0facbeda640c*`
 - SubjectUserName|endswith: `NOT *$*`
 
+**Key Indicators**
+
+When `Add-DomainObjectAcl` is used to to grant DCSync rights, the following ACEs are added to the DACL and the associated GUIDs are recorded in `Event ID 5136` logs.
+
+- DS-Replication-Get-Change
+  - GUID: 1131f6aa-9c07-11d1-f79f-00c04fc2dcd2
+- DS-Replication-Get-Changes-All
+  - GUID: 1131f6ad-9c07-11d1-f79f-00c04fc2dcd2
+
+These same GUIDs are recorded in `Event ID 4662` logs under the `"properties"` field when DCSync is used. Note that we have mutated this field to `"object.properties"` in our environment.
+
+Look for the following Event IDs, filter for the GUIDs above, and group by time:
+- **Event ID 5136**- an AD object was modified
+  - filter on the GUIDs above
+- **Event ID 4662** - an AD object was accessed
+  - search for account names not belonging to domain controllers to identify user account that performed sync operations
+
+```
+Keep in mind that if DCSync is used from a DC account there will be no
+log of the event. Also, even with the above indicators, further
+analysis is required to identify a source IP. One method is to conduct
+network traffic analysis on the DC of interest then deconflict other
+known DC IPs. Another method is to use SQL to join 4662 and 4624 logs
+based on the TargetLogonId value.
+```
+
+**Destination**
+- event.code: `*4662*` or `*5136*`
+- OperationProperties:
+  - `*1131f6a*-9c*11d1-f79f-00c04fc2dcd2*`
+
 Reference:
 - [DCSync Detection, Exploitation, and Detection](https://www.linkedin.com/pulse/dcsync-detection-exploitation-debashis-pal/)
 - [Detects Mimikatz DC sync security events](https://github.com/SigmaHQ/sigma/blob/961932ee3fa9751c8f91599b70ede33bc72d90eb/rules/windows/builtin/security/win_security_dcsync.yml#L26)
@@ -2177,6 +2208,12 @@ FileCreate or ModuleLoad(Sysmon)
 - event.code: `*11*` OR `*7*` 
 - file.path: `NTWDBLIB.dll`
 - process.executable: 
+
+```
+python, winpwnage.py, -u, uac, -i, 11, -p, c:\Users\IEUser\Desktop\hellox86.dll
+```
+Reference:
+- https://github.com/vaginessa/WinPwnage-2
 
 
 ## Privilege Escalation: UAC Bypass using CompMgmtLauncher
@@ -2248,7 +2285,7 @@ Look for the following Sysmon events:
 - **Event ID 13** - A registry value was modified
 
 
-## Credential Dumping: INVOKE-MIMIKATZ
+## Credential Access: INVOKE-MIMIKATZ
 **Key Indicators**
 
 Begin by filtering on the indicators below:
@@ -2283,6 +2320,186 @@ An **access mask** is a 32-bit value whose bits correspond to the access rights 
 | event::drop                                                                     | 0x1438                 | kull_m_patch_genericProcessOrServiceFromBuild() via kuhl_m_event_drop()      | EventLog                                  | PROCESS_VM_READ \| PROCESS_VM_WRITE \| PROCESS_VM_OPERATION \| PROCESS_QUERY_INFORMATION                          | ** this event does not get logged! :O mimikatz seems to be fast enough to apply the patch before the event gets logged!**                                                                                                                                                                                                                                                                                                    |
 | misc::ncroutemon                                                                | 0x1438                 | kull_m_patch_genericProcessOrServiceFromBuild() via kuhl_m_misc_ncroutemon() | dsNcService                               | PROCESS_VM_READ \| PROCESS_VM_WRITE \| PROCESS_VM_OPERATION \| PROCESS_QUERY_INFORMATION                          |                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ts::multirdp                                                                    | 0x1438                 | kull_m_patch_genericProcessOrServiceFromBuild() via kuhl_m_ts_multirdp()     | TermService                               | PROCESS_VM_READ \| PROCESS_VM_WRITE \| PROCESS_VM_OPERATION \| PROCESS_QUERY_INFORMATION                          |                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+## Credential Access: Credential Dumping
+Fields of Interest:
+
+- event.code: `*1*` or `*4688*`
+- Time 
+- process.parent.executable 
+- process.executable
+- process.parent.command_line: `*.dmp*` `*lssas*`
+- process.command_line 
+- agent.hostname / host.name
+- winlog.user.name
+
+## Credential Access: Credential Dumping thru Fileless Attack
+Fields of Interest:
+
+- event.code: `*1*` or `*4688*`
+- Time 
+- process.parent.executable 
+- process.executable
+- process.parent.command_line: `*mimikatz*` `*DumpCreds*`
+- process.command_line 
+- agent.hostname / host.name
+- winlog.user.name
+
+
+## Discovery: Network Share Enumeration
+Key Indicators
+Filter on specific Sysmon Event IDs and common named pipes, looking for local and remote domain SMB sessions.
+
+Event IDs 
+- **Event ID 3** - A TCP or UDP connection was made
+- **Event ID 18** - A named pipe connection was made between a client and a server
+- **Event ID 5145** - A network share object was checked to see whether client can be granted desired access
+
+Common Named Pipes
+- **\samr** - user management (SAM) functions
+- **\srvsvc** - server management
+- **\lsarpc** - local security authority
+- **\winreg** - Windows registry
+
+Fields of Interest:
+
+Network (Sysmon)
+- event.code: `*3*` 
+- source.domain: 
+- destination.domain: 
+- user.name
+- event.action
+
+Pipe Connected (Sysmon)
+- event.code: `*18*` 
+- file.name: `\samr` OR `\srvsvc` OR `\lsarpc` OR `\winreg`
+- event.action
+
+Object Access - Detailed File Share (Windows Security)
+- Event Code: `5145`
+- Relative Target Name: `\samr` OR `\srvsvc` OR `\lsarpc` OR `\winreg`
+- Share Name: `IPC$`
+- Access_Mask: `0x12019f`
+
+
+Look for rare occurrences of **source machine**, **destination machine**, and **users** - a good approach if you know what you're looking for.
+
+Another approach is to look for chains of events generated by the net command. Benign share access looks different then if everything is accessed in a short amount of time. 
+
+Often, attackers launch PowerShell scripts or use Remote Access Tool (RAT) features to
+automate comprehensive enumeration.
+```
+What's a named pipe? - A named pipe is a logical connection, similar to a TCP
+session, between a client and server that are involved in a Common Internet
+File System (CIFS)or SMB connection. The name of the pipe serves as the
+endpoint for communication in the same way that a port number serves as the
+endpoint for TCP sessions.
+```
+
+## Reconnaissance: Domain Admins or Group Enumeration
+Detects activity as "net user administrator /domain" and "net group domain admins /domain"
+
+Fields of Interest:
+
+**Source**: 
+```
+  net user administrator /domain
+```
+
+**Destination:**
+  - Event Code: `4661`
+  - Object Type: `SAM_USER`
+  - Object Name: `S-1-5-21-*-500 (* represents domain)`
+  - Access Mask: `0x2d `
+  
+**Note**: In my testing, users in the Domain Admins group will display a SID.  Other users will not. The exception is the Guest and krbtgt accounts.  I would also pay attention to the krbtgt `SID S-1-5-21-*-502`.  I would think that it would be very odd to see this and may indicate an attacker is intending to use Golden Tickets.
+
+**Source**: 
+```
+  net group "Domain Admins" /domain
+```
+**Destination:**
+    Event Code: `4661`
+    Object Type: `SAM_GROUP`
+    Object Name: `S-1-5-21-*-512`
+    Access Mask: `0x2d`
+**Note**: Also pay attention to the Enterprise Admins group with the SID of `S-1-5-21-*-519`
+
+The following can be used to identify **PowerSploit's** `Get-NetSession`, `Get-NetShare`, `netsess.exe` and `net view`.  The `net view` command may look something like 
+```
+net view \\192.168.56.10
+```
+
+**Destination**:
+  - Event Code: `5145`
+  - Relative Target Name: `srvsvc`
+  - Share Name: `IPC$`
+  - Access_Mask: `0x12019f`
+
+**Note**: These events may be very loud.  I would suggest looking for a single source creating srvsvc pipes on multiple machines within a specified time frame.  This may be indicative of enumeration activity.
+
+## Lateral Movement: PsExec Usage
+**Key Indicators**
+
+PSExec service creation (Windows Event ID 7045) and EULA-related remote registry changes are both known indicators, however note that these can be bypassed using the `PsExec -r (rename)` flag or `PsExec Python and PowerShel`l versions, respectively.
+
+One dependable approach to detection is to filter on the following Windows Event ID which logs the relative target name field traces of remote access to `PSEXECSVC` named pipes:
+
+- **Event ID 5145** - A network share object was checked to see whether client can be granted desired access
+
+From here, wildcard search for target names ending in `"stdin"`, `"stdout"`, or `"stderr"`; these strings are consistently appended to PsExec services regardless if they are renamed. Be aware that we use the field name `"share.relative_target_name"` which may be different than what's used in other environments.
+
+Fields of Interest:
+
+**Destination**:
+  - Event Code: `5145`
+  - Relative Target Name: `"*-stdin"` OR `"*-stdout"` OR `"*-stderr"`
+  - Share Name: `IPC$`
+  - Access_Mask: `0x12019f`
+
+```
+Did you know? - Event ID 5145 is logged when the Detailed File Share
+setting is enabled in the Windows Audit logging policy. This setting
+logs an event every time a file or folder is accessed, whereas the
+File Share setting only records one event for any connection
+established between a client and file share. Detailed File Share audit
+events include detailed information about the permissions or other
+criteria used to grant or deny access.
+```
+
+## Lateral Movement: WMIExec Usage
+
+**Key Indicators**
+
+Search for the following Sysmon Event IDs then group logs generated within 1
+minute of each other.
+- **Event ID 1** - A process was created
+- **Event ID 3** - A TCP/UDP connection was made
+
+When `WMI` is used for remote access, Sysmon logs a network connection and instances of child process creations with `wmiprvse.exe` as the parent process. Look for `cmd.exe` and `powershell.exe` child processes then investigate process arguments for potentially malicious commands.
+
+Fields of Interest:
+
+- event.code: `*1*` 
+- process.parent.executable : `*wmiprvse.exe*`
+- process.executable : `*powershell.exe* OR *cmd.exe*`
+- Time
+- winlog.computer_name
+- winlog.user.name
+- agent.hostname / host.name
+
+
+## Lateral Movement: Possible Remote WMI Abuse - Mimikatz (Remote Login)
+Fields of Interest:
+
+A logon was attempted using explicit credentials (Windows Security)
+- event.code: `*4648*`
+- Account.Name
+- Account.Domain
+- process.executable: `*C:\Windows\System32\svchost.exe*`
+- process.executable: `*C:\Windows\System32\wbem\WMIC.exe*`
+
+[Tool Analysis Result Sheet](https://jpcertcc.github.io/ToolAnalysisResultSheet/details/RemoteLogin-Mimikatz.htm)
 
 ## Credential Attack
 Fields of Interest:
@@ -2334,29 +2551,6 @@ Fields of Interest:
 - destination.ip	
 - destination.port
 
-## Credential Dumping
-Fields of Interest:
-
-- event.code: `*1*` or `*4688*`
-- Time 
-- process.parent.executable 
-- process.executable
-- process.parent.command_line: `*.dmp*` `*lssas*`
-- process.command_line 
-- agent.hostname / host.name
-- winlog.user.name
-
-## Credential Dumping thru Fileless Attack
-Fields of Interest:
-
-- event.code: `*1*` or `*4688*`
-- Time 
-- process.parent.executable 
-- process.executable
-- process.parent.command_line: `*mimikatz*` `*DumpCreds*`
-- process.command_line 
-- agent.hostname / host.name
-- winlog.user.name
 
 ## Spearphishing Attachment / MalDoc
 Fields of Interest:
@@ -2440,33 +2634,6 @@ ScriptBlockText Logging (Powershell)
 
 ### Execute-Assembly
 - winlog.event_data.ScriptBlockText: `*Reflection.Assembly* or *Load* or *ReadAllBytes*`
-
-## UAC Bypass 
-Fields of Interest:
-
-- event.code: *7* 
-- file.path: `*ntwdblib.dll*`
-- process.executable: ``*\system32\cliconfg.exe*``
-
-```
-python, winpwnage.py, -u, uac, -i, 11, -p, c:\Users\IEUser\Desktop\hellox86.dll
-```
-Reference:
-- https://github.com/vaginessa/WinPwnage-2
-
-
-
-## Possible Remote WMI Abuse - Mimikatz (Remote Login)
-Fields of Interest:
-
-A logon was attempted using explicit credentials (Windows Security)
-- event.code: `*4648*`
-- Account.Name
-- Account.Domain
-- process.executable: `*C:\Windows\System32\svchost.exe*`
-- process.executable: `*C:\Windows\System32\wbem\WMIC.exe*`
-
-[Tool Analysis Result Sheet](https://jpcertcc.github.io/ToolAnalysisResultSheet/details/RemoteLogin-Mimikatz.htm)
 
 ## Persistence through Short Time Scheduled Tasks
 Fields of Interest:
