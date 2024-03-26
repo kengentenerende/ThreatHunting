@@ -36,7 +36,7 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 
 ##  Filtering in SPL - Rex
 
-|     Command        |     fields                                                                                                                                                                                                                           |
+|     Command        |     rex                                                                                                                                                                                                                           |
 |--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |     Explanation    |     Rex command matches the value of the specified field against the unanchored regular expression and extracts the named groups into fields of the corresponding names.    |
 |     Syntax         |     `\| rex  [field=<field>] <regex-expression>`                                                                                                                                                                                       |
@@ -94,13 +94,19 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 | Syntax      | `\| reverse`                                                  |
 | Example     | `<Search Query> \| reverse`                                  |
 
+## Structuring in SPL - Transaction
+|     Command        |     transaction                                                              |
+|--------------------|----------------------------------------------------------------------|
+|     Explanation    |     This   commands groups search results into transactions.         |
+|     Syntax         |     `\|   transaction  <field_name>     \|   transaction <field_name> maxspan=5s maxpause=30s <field_name>`       |
+|     Example        |     `transaction clientip maxspan=5s maxpause=30s \| table host`                                          |
 
 ## Transformational in SPL - Top
 |     Command        |     top                                                              |
 |--------------------|----------------------------------------------------------------------|
 |     Explanation    |     This   command returns frequent values for the top 10 events.    |
-|     Syntax         |     `\|   top  <field_name>     \|   top limit=6 <field_name>`         |
-|     Example        |     `top   limit=3 EventID`                                            |
+|     Syntax         |     `\|   top  <field_name>     \|   top limit=6 <field_name>`       |
+|     Example        |     `top   limit=3 EventID`                                          |
 
 ## Transformational in SPL - Rare
 |     Command        |     rare                                                                                                               |
@@ -143,9 +149,29 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 |     Example        |     `\| timechart count   by Image`                                                                                                                       |
 
 # SPLUNK - Intel-driven Threat Hunting
+- [Splunk Boss of the SOC: Hunting an APT with Splunk & MITRE ATT&CK Framework (Part 1)](https://medium.com/@shunxianou/splunk-boss-of-the-soc-hunting-an-apt-with-splunk-mitre-att-ck-framework-part-1-b6d3553b788e)
+- [Splunk Boss of the SOC: Hunting an APT with Splunk & MITRE ATT&CK Framework (Part 2)](https://medium.com/@shunxianou/splunk-boss-of-the-soc-hunting-an-apt-with-splunk-mitre-att-ck-framework-part-2-5851a996f647)
+- [Threat Hunting on Splunk Beginner Cheat Sheet — Mastering Sourcetypes & Fields of Interest](https://medium.com/@shunxianou/threat-hunting-on-splunk-beginner-cheat-sheet-mastering-sourcetypes-fields-of-interest-3dee5541b901)
 
+## Data Sourcetypes
+`Windows-TA`
+- This is the default Windows-TA for Splunk and collects not only EventLog data but also registry information
 
-## Data Sourcetypes Included
+`Sysmon-TA`
+- This TA collects information generated from the Sysmon tool
+
+`Firewall`
+- The scenario uses a Fortinet Fortigate devices as a “Next Generation Firewall” (NGFW). The Fortigate device in this scenario is configured to log network traffic crossing from internal to external, any alerts/blocks, layer 7 protection, and events that the Fortigate device logs
+
+`Stream`
+- Stream is Splunk’s wiredata collection/creation tool. It can capture a wide variety of traffic (including PCAPS and payloads!) on a network and turn them into wire metadata that is ingested into Splunk. The sourcetype is broken out into all of the captured/detected protocols (IE stream:dns, stream:http, etc). In this exercise, we have turned on every possible option for Stream so that you can experience the full awesomeness of the tool
+
+`IIS`
+- Internet Information Services (IIS) is Microsoft’s default webserver on Windows Server Operating systems. It will show the access and utilization of websites hosted on Windows Web Servers
+
+`Suricata`
+- Suricata is a widely used open source IDS similar to Snort. It inspects packets traversing the network and creates alerts based on signatures. In this dataset, we are using a free signature pack provided by Emerging Threats
+
 * WinEventLog:Application
 * WinEventLog:Security
 * WinEventLog:System
@@ -186,18 +212,19 @@ Field of Interest:
 - uri_path 
 - status
 - passwd: `multiple`
-- username: `singel source`
+- username: `single source`
 - timestamp
 	
 SPL of Interest:
 - rex
 - eval
-- stats
+- stats: `avg()`, count`()`
 - timechart
-- range(_time)
-- transaction/table
+- range: `(_time)`
+- transaction 
+- table: `duration`
 
-**Extract Taregt Data**
+**Extract Target Data**
 ```
 source="stream:http" http_method=POST form_data=*passwd*
 | rex field=form_data "username=(?<username>[^&]+)" 
@@ -224,6 +251,98 @@ source="stream:http" http_method=POST form_data=*passwd*
 or 
 | transaction passwd 
 | table duration
+```
+**Check Activity per IP**
+```
+index=* sourcetype="stream:http" imreallynotbatman.com *passwd*
+| transaction src_ip
+| table src_ip, form_data
+```
+
+## Reconnaissance: Scanning Vulnerability 
+Field of Interest:
+
+- source: `stream:http`
+- form_data
+- http_method
+- http_referrer: `check for suspicious tools`
+- site
+- src_content/src_headers: `check for suspicious tools`
+- dest_content/dest_headers
+- uri
+- uri_path 
+- src_ip
+- src_port
+- dest_ip
+- dest_port
+- timestamp
+	
+SPL of Interest:
+- rex
+- eval
+- stats: `values()`
+- transaction: `src_ip`
+- table
+
+```
+source="stream:http" AND site=*imreallynotbatman.com* AND http_method=POST
+| transaction src_ip
+| table src_ip, uri, src_headers
+or
+| stats count by src_ip
+```
+```
+source="stream:http" AND site=*imreallynotbatman.com* AND http_method=POST AND src_headers=*acunetix*
+| stats values(src_headers) as src_headers c by src | sort -c
+| table src c src_headers
+```
+
+## Command and Control: Outbound Connection with Suspicious File Retrieval
+Field of Interest:
+
+- source: `stream:http`
+- c_ip
+- src_ip
+- http_method: `GET`
+- src_ip: `Internal IP`
+- dest_port
+- dest_ip: `External IP` 
+- method
+- uri
+- uri_path
+- url
+	
+SPL of Interest:
+- stats: `count(url/uri)`
+
+**Note: Perform extended checking of the reputation of External IP**
+```
+source="stream:http" AND src_ip="192.168.250.70"
+| stats count by uri
+or
+| stats count by url
+```
+
+## Command and Control: Outbound Connection with Suspicious File Download
+Field of Interest:
+
+- source: `stream:http` or `stream:http`
+- c_ip
+- src_ip
+- src_ip: `External IP`
+- dest_port
+- dest_ip: `Internal IP` 
+- http_method: `POST`
+- method
+- `filename=` or 
+	
+SPL of Interest:
+- rex: `filename`
+- stats: `count(url/uri)`
+
+```
+index=* imreallynotbatman.com *.exe*  dest="192.168.250.70" 
+|  stats count by filename
 ```
 
 # ELK
