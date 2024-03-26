@@ -152,6 +152,9 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 - [Splunk Boss of the SOC: Hunting an APT with Splunk & MITRE ATT&CK Framework (Part 1)](https://medium.com/@shunxianou/splunk-boss-of-the-soc-hunting-an-apt-with-splunk-mitre-att-ck-framework-part-1-b6d3553b788e)
 - [Splunk Boss of the SOC: Hunting an APT with Splunk & MITRE ATT&CK Framework (Part 2)](https://medium.com/@shunxianou/splunk-boss-of-the-soc-hunting-an-apt-with-splunk-mitre-att-ck-framework-part-2-5851a996f647)
 - [Threat Hunting on Splunk Beginner Cheat Sheet — Mastering Sourcetypes & Fields of Interest](https://medium.com/@shunxianou/threat-hunting-on-splunk-beginner-cheat-sheet-mastering-sourcetypes-fields-of-interest-3dee5541b901)
+- [TryHackMe-BP-Splunk/Advanced-Persitent-Threat](https://www.aldeid.com/wiki/TryHackMe-BP-Splunk/Advanced-Persitent-Threat)
+- [Splunk.BOTS / Boss of the SOC Ver.1 Write-Up (30/30)](https://www.absolroot.com/ed93f920-3da1-4607-b990-6fce9fef5be1)
+- [TryHackMe-BP-Splunk/Ransomware](https://www.aldeid.com/wiki/TryHackMe-BP-Splunk/Ransomware)
 
 ## Data Sourcetypes
 `Windows-TA`
@@ -229,7 +232,7 @@ SPL of Interest:
 source="stream:http" http_method=POST form_data=*passwd*
 | rex field=form_data "username=(?<username>[^&]+)" 
 | rex field=form_data "passwd=(?<passwd>[^&]+)"
-| eval password_length = len(username)
+| eval password_length = len(passwd)
 | stats avg(password_length) as avg_password_length
 ```
 **Calculate Frequency**
@@ -321,6 +324,10 @@ source="stream:http" AND src_ip="192.168.250.70"
 or
 | stats count by url
 ```
+```
+index=* sourcetype=stream:http c_ip="192.168.250.100"
+| stats count by url
+```
 
 ## Command and Control: Outbound Connection with Suspicious File Download
 Field of Interest:
@@ -342,6 +349,131 @@ SPL of Interest:
 ```
 index=* imreallynotbatman.com *.exe*  dest="192.168.250.70" 
 |  stats count by filename
+```
+```
+index=* sourcetype=stream:http dest="192.168.250.70" "multipart/form-data" 
+|  stats count by part_filename{}
+```
+
+## Command and Control: Suspicious Traffic
+Field of Interest:
+
+- source: `suricata`
+- src_ip
+- src_ip: 
+- dest_port
+- dest_ip: 
+- method_parameter
+- method
+- reply_content
+	
+SPL of Interest:
+- rex
+- stats
+
+```
+sourcetype=suricata AND cerber
+| stats count by alert.signature_id
+```
+
+## Command and Control: Suspicious Traffic (DNS)
+Field of Interest:
+
+- source: `suricata`
+- src_ip
+- src_ip: 
+- dest_port
+- dest_ip:  
+- record_type
+- query
+- bytes
+	
+SPL of Interest:
+- transaction
+- stats
+
+```
+sourcetype="stream:dns" src_ip="192.168.250.100" record_type=A
+| transaction src_ip
+| table src_ip, dest_ip, query{}
+```
+
+## Execution: Malicious Scripting
+Field of Interest:
+
+- sourcetype: `XmlWinEventLog:Microsoft-Windows-Sysmon/Operational`
+- eventcode=`1`
+- dest
+- dest_port 
+- host
+- src
+- src_port
+- CommandLine
+- ParentCommandLine
+- user
+- ParentProcessId
+- ProcessId
+
+SPL of Interest:
+- transaction
+- eval
+
+```
+sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" host=we8105desk EventCode=1 VBS
+| transaction ParentImage
+| eval lenCMD = len(CommandLine)
+| table ParentImage, ParentCommandLine, Image, CommandLine, lenCMD
+```
+
+## Initial Access: USB 
+Field of Interest:
+
+- sourcetype: `WinRegistry`
+- registry_value_name
+- registry_key_name
+- registry_path
+- registry_value_data
+- dest
+
+Reference:
+[USB device registry entries](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/usb-device-specific-registry-settings)
+[USB Forensics: Find the History of Every Connected USB Device on Your Computer](https://www.cybrary.it/blog/usb-forensics-find-the-history-of-every-connected-usb-device-on-your-computer)
+```
+sourcetype=WinRegistry host="we8105desk" registry_value_name=friendlyname
+```
+
+### Impact: File Decryption 
+Field of Interest:
+
+
+sourcetype: `WinEventLog:Security`
+- Event Code: `5145` 
+- Account Name
+- Share Name:	`\\*\fileshare`
+- Share Path:	`\??\C:\fileshare`
+- Access Mask: `0x12019F`
+- Relative Target Name: `Target FileName`
+
+sourcetype: `WinEventLog:Microsoft-Windows-Sysmon/Operational`
+- Event Code: `2`
+- TargetFilename
+- direction
+- dvc
+
+SPL of Interest:
+- dedup
+- table
+- stat
+
+```
+host="we9041srv" sourcetype="WinEventLog:Security" EventCode="5145" Source_Address="192.168.250.100" Account_Name="bob.smith" Share_Name="\\\\*\\fileshare" Relative_Target_Name="*.pdf" Access_Mask=0x12019F
+| dedup Relative_Target_Name
+| table Relative_Target_Name
+```
+```
+host="we8105desk" ".txt" EventID="2" file_path="C:\\Users\\bob.smith.WAYNECORPINC*" 
+| dedup file_path 
+| stats count as unique_count
 ```
 
 # ELK
@@ -381,6 +513,7 @@ Kibana Query Language. Make sure to enable KQL for every session for better sear
 - [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) - Atomic Red Team is a library of tests mapped to the MITRE ATT&CK® framework. Security teams can use Atomic Red Team to quickly, portably, and reproducibly test their environments.
 - [MITRE Cyber Analytics Repository](https://car.mitre.org/analytics/by_technique)- The MITRE Cyber Analytics Repository (CAR) is a knowledge base of analytics developed by MITRE based on the MITRE ATT&CK adversary model.
 - [Threat Hunter Playbook](https://threathunterplaybook.com/intro.html) - The Threat Hunter Playbook is a community-driven, open source project to share detection logic, adversary tradecraft and resources to make detection development more efficient. 
+
 
 ## Execution: Rundll32
 Fields of Interest:
