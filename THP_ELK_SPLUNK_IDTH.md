@@ -34,44 +34,52 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 |------------------------|---------------------------|-----------------------------------------------------------------------------------------------|
 |     `*`                  |           status=fail*    |     It   will return all the results with values like     status=failed     status=failure    |
 
+##  Filtering in SPL - Rex
+
+|     Command        |     fields                                                                                                                                                                                                                           |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     Explanation    |     Rex command matches the value of the specified field against the unanchored regular expression and extracts the named groups into fields of the corresponding names.    |
+|     Syntax         |     `\| rex  [field=<field>] <regex-expression>`                                                                                                                                                                                       |
+|     Example        |     `\| rex field=form_data "passwd=(?<passwd>[^&]+)" `  
+
 ##  Filtering in SPL - Fields
 
 |     Command        |     fields                                                                                                                                                                                                                           |
 |--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |     Explanation    |     Fields   command is used to add or remove mentioned fields from the search results. To   remove the field, minus sign ( - ) is used before the fieldname and plus ( +   ) is used before the fields which we want to display.    |
-|     Syntax         |     `\|   fields <field_name1>  <field_name2>`                                                                                                                                                                                       |
+|     Syntax         |     `\| fields <field_name1>  <field_name2>`                                                                                                                                                                                       |
 |     Example        |     `\| fields +   HostName - EventID `                                                                                                                                                                                              |
 
 ##  Filtering in SPL - Search
 |     Command        |     search                                                                                                     |
 |--------------------|----------------------------------------------------------------------------------------------------------------|
 |     Explanation    |     This command is used to search for the raw text while   using the chaining command \|                      |
-|     Syntax         |     `\|   search  <search_keyword>`                                                                            |
+|     Syntax         |     `\| search  <search_keyword>`                                                                            |
 |     Example        |     `\| search   "Powershell" `                                                                                |
 
 ##  Filtering in SPL - Dedup
 |     Command        |     dedup                                                                                                                                                                                                                         |
 |--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |     Explanation    |     Dedup   is the command used to remove duplicate fields from the search results. We   often get the results with various fields getting the same results. These   commands remove the duplicates to show the unique values.    |
-|     Syntax         |     `\|   dedup <fieldname>`                                                                                                                                                                                                      |
+|     Syntax         |     `\| dedup <fieldname>`                                                                                                                                                                                                      |
 |     Example        |     `\| dedup EventID`                                                                                                                                                                                                            |
 
 ##  Structuring in SPL - Table
 |     Explanation    |     `Each   event has multiple fields, and not every field is important to display. The   Table command allows us to create a table with selective fields as columns.   |
 |--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-|     Syntax         |     `\|   table <field_name1> <fieldname_2>`                                                                                                                            |
+|     Syntax         |     `\| table <field_name1> <fieldname_2>`                                                                                                                            |
 |     Example        |     `\| table     \| head 20` # will return the top 20 events from the result   list.                                                                                   |
 
 ##  Structuring in SPL - Head
 |     Explanation    |     `The head command returns the first 10 events   if no number is specified.                                                                   |
 |--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-|     Syntax         |     `\|   head <number>`                                                                                                                         |
+|     Syntax         |     `\| head <number>`                                                                                                                         |
 |     Example        |     `\| head`   # will return the top 10 events from the   result list     \| head 20    # will return the top 20 events from   the result list  |
 
 ##  Structuring in SPL - Tail
 |     Explanation    |     `The Tail command returns the last 10   events if no number is specified.                                                                   |
 |--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-|     Syntax         |     `\|   tail <number>`                                                                                                                        |
+|     Syntax         |     `\| tail <number>`                                                                                                                        |
 |     Example        |     `\| tail` # will return the last 10 events from the result   list     \| tail 20   # will return the last 20 events from the   result list  |
 
 ##  Structuring in SPL - Sort
@@ -83,7 +91,7 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 ##  Structuring in SPL - Reverse
 | Explanation | The `reverse` command simply reverses the order of the events. |
 |-------------|--------------------------------------------------------------|
-| Syntax      | `\|reverse`                                                  |
+| Syntax      | `\| reverse`                                                  |
 | Example     | `<Search Query> \| reverse`                                  |
 
 
@@ -136,6 +144,87 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 
 # SPLUNK - Intel-driven Threat Hunting
 
+
+## Data Sourcetypes Included
+* WinEventLog:Application
+* WinEventLog:Security
+* WinEventLog:System
+* XmlWinEventLog:Microsoft-Windows-Sysmon/Operational
+* fgt_event
+* fgt_traffic
+* fgt_utm
+* iis
+* nessus:scan
+* stream:dhcp
+* stream:dns
+* stream:http
+* stream:icmp
+* stream:ip
+* stream:ldap
+* stream:mapi
+* stream:sip
+* stream:smb
+* stream:snmp
+* stream:tcp
+* suricata
+* winregistry
+
+## Reconnaissance: BruteForce Attack
+Field of Interest:
+
+- source: `stream:http`
+- form_data
+- http_method
+- http_referrer
+- site
+- src_ip
+- src_port
+- dest_ip
+- dest_port
+- src_content
+- uri
+- uri_path 
+- status
+- passwd: `multiple`
+- username: `singel source`
+- timestamp
+	
+SPL of Interest:
+- rex
+- eval
+- stats
+- timechart
+- range(_time)
+- transaction/table
+
+**Extract Taregt Data**
+```
+source="stream:http" http_method=POST form_data=*passwd*
+| rex field=form_data "username=(?<username>[^&]+)" 
+| rex field=form_data "passwd=(?<passwd>[^&]+)"
+| eval password_length = len(username)
+| stats avg(password_length) as avg_password_length
+```
+**Calculate Frequency**
+```
+source="stream:http" http_method=POST form_data=*passwd*
+| timechart count                     
+or
+| timechart count dest_ip             
+or
+| timechart span=1s count by dest_ip  
+```
+**Calculate Interval**
+```
+source="stream:http" http_method=POST form_data=*passwd*
+| rex field=form_data "username=(?<username>[^&]+)" 
+| rex field=form_data "passwd=(?<passwd>[^&]+)"
+| search passwd=*batman*
+| stats range(_time)
+or 
+| transaction passwd 
+| table duration
+```
 
 # ELK
 Elastic's ELK is an open source stack that consists of three applications (Elasticsearch, Logstash and Kibana) working in synergy to provide users with end-to-end search and visualization capabilities to analyze and investigate log file sources in real time.
