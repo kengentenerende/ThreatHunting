@@ -2,7 +2,7 @@
 # Splunk
 Splunk is one of the leading SIEM solutions in the market that provides the ability to collect, analyze and correlate the network and machine logs in real-time.  Splunk can be used for Application Management, Operations Management, Security & Compliance, etc.
 
-# Visualization
+# SPLUNK - Visualization
 
 |     Fields             |     Descripition.    |
 |------------------------------------|------------------------------------|
@@ -134,6 +134,8 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 |     Syntax         |     `\|   timechart function  <field_name>`                                                                                                               |
 |     Example        |     `\| timechart count   by Image`                                                                                                                       |
 
+# SPLUNK - Intel-driven Threat Hunting
+
 
 # ELK
 Elastic's ELK is an open source stack that consists of three applications (Elasticsearch, Logstash and Kibana) working in synergy to provide users with end-to-end search and visualization capabilities to analyze and investigate log file sources in real time.
@@ -144,7 +146,7 @@ ELK Stack
 - Kibana – GUI frontend for search, visualization, dashboards, reporting and alerting, and Elastic stack cluster management
 - Beats – Lightweight log shippers that are installed on endpoints
 
-# Visualization
+# ELK - Visualization
 
 - Home > Visualization
 - Click the Create Visualization
@@ -166,7 +168,7 @@ Go to Dashboard and add all of your visualized charts.
 Note: On the search bar part, you may see there's a **KQL** there. KQL stands for
 Kibana Query Language. Make sure to enable KQL for every session for better search usage.
 
-# Intel-driven Threat Hunting
+# ELK - Intel-driven Threat Hunting
 - [mitre_attack_xml_eventlogs](https://github.com/BoredHackerBlog/mitre_attack_xml_eventlogs/tree/db5699e016a223c31d34a6d3024ac9cd33d87f52?tab=readme-ov-file) - MITRE ATTACK evtx samples from EVTX-to-MITRE-Attack & EVTX-ATTACK-SAMPLES repos in XML format
 - [EVTX-ATTACK-SAMPLES](https://github.com/Lichtsinnig/EVTX-ATTACK-SAMPLES/tree/57395181405d5e3e91edfb70c7ffefad4fcfc04f) - This is a container for windows events samples associated to specific attack and post-exploitation techniques
 - [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) - Atomic Red Team is a library of tests mapped to the MITRE ATT&CK® framework. Security teams can use Atomic Red Team to quickly, portably, and reproducibly test their environments.
