@@ -1,4 +1,139 @@
 # THP Cheat Sheet ELK and Splunk
+# Splunk
+Splunk is one of the leading SIEM solutions in the market that provides the ability to collect, analyze and correlate the network and machine logs in real-time.  Splunk can be used for Application Management, Operations Management, Security & Compliance, etc.
+
+# Visualization
+
+|     Fields             |     Descripition.    |
+|------------------------------------|------------------------------------|
+|     1- Selected Fields             |     Splunk extracts   the default fields like source, sourcetype, and host, which appear in each   event, and places them under the selected fields column. We can select other   fields that seem essential and add them to the list.    |
+|     2- Interesting Fields          |     Pulls   all the interesting fields it finds and displays them in the left panel to   further explore.                                                                                                                                 |
+|     3- Alpha-numeric fields 'α'    |     This   alpha symbol shows that the field contains text values.                                                                                                                                                                        |
+|     4- Numeric fields '#'          |     This   symbol shows that this field contains numerical values.                                                                                                                                                                        |
+|     5- Count                       |     The   number against each field shows the number of events captured in that   timeframe.                                                                                                                                              |
+
+## Search Field Operators
+|     Field Name                  |     Operator    |     Example                        |     Explanation                                                                                                                                                                 |
+|---------------------------------|-----------------|------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     Equal                       |    `=`          |     UserName=Mark                  |     This   operator is used to match values against the field. In this example, it will   look for all the events, where the value of the field UserName is equal to   Mark.    |
+|     Not Equal to                |    `!=`         |     UserName!=Mark                 |     This   operator returns all the events where the UserName value does not match Mark.                                                                                        |
+|     Less than                   |    `<`          |     Age   < 10                     |     Showing   all the events with the value of Age less than 10.                                                                                                                |
+|     Less than or Equal to       |    `<=`         |     Age   <= 10                    |     Showing   all the events with the value of Age less than or equal to 10.                                                                                                    |
+|     Greater than                |    `> `         |     Outbound_traffic   > 50 MB     |     This   will return all the events where the Outbound traffic value is over 50 MB.                                                                                           |
+|     Greater Than or Equal to    |    `>=`         |     Outbound_traffic   >= 50 MB    |     This   will return all the events where the Outbound traffic value is greater or   equal to 50 MB.                                                                          |
+
+## Boolean Operators
+|     Operator    |     Syntax                               |     Explanation                                                                              |
+|-----------------|------------------------------------------|----------------------------------------------------------------------------------------------|
+|     `NOT`         |     field_A NOT value                    |     Ignore   the events from the result where field_A contain the specified value.           |
+|     `OR`         |     field_A=value1 OR field_A=value2     |     Return   all the events in which field_A contains either value1 or value2.               |
+|     `AND`         |     field_A=value1 AND field_B=value2    |     Return   all the events in which field_A contains value1 and field_B contains value2.    |
+
+## Wild Card
+|     Wildcard symbol    |     Example               |     Explanation                                                                               |
+|------------------------|---------------------------|-----------------------------------------------------------------------------------------------|
+|     `*`                  |           status=fail*    |     It   will return all the results with values like     status=failed     status=failure    |
+
+##  Filtering in SPL - Fields
+
+|     Command        |     fields                                                                                                                                                                                                                           |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     Explanation    |     Fields   command is used to add or remove mentioned fields from the search results. To   remove the field, minus sign ( - ) is used before the fieldname and plus ( +   ) is used before the fields which we want to display.    |
+|     Syntax         |     `\|   fields <field_name1>  <field_name2>`                                                                                                                                                                                       |
+|     Example        |     `\| fields +   HostName - EventID `                                                                                                                                                                                              |
+
+##  Filtering in SPL - Search
+|     Command        |     search                                                                                                     |
+|--------------------|----------------------------------------------------------------------------------------------------------------|
+|     Explanation    |     This command is used to search for the raw text while   using the chaining command \|                      |
+|     Syntax         |     `\|   search  <search_keyword>`                                                                            |
+|     Example        |     `\| search   "Powershell" `                                                                                |
+
+##  Filtering in SPL - Dedup
+|     Command        |     dedup                                                                                                                                                                                                                         |
+|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     Explanation    |     Dedup   is the command used to remove duplicate fields from the search results. We   often get the results with various fields getting the same results. These   commands remove the duplicates to show the unique values.    |
+|     Syntax         |     `\|   dedup <fieldname>`                                                                                                                                                                                                      |
+|     Example        |     `\| dedup EventID`                                                                                                                                                                                                            |
+
+##  Structuring in SPL - Table
+|     Explanation    |     `Each   event has multiple fields, and not every field is important to display. The   Table command allows us to create a table with selective fields as columns.   |
+|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     Syntax         |     `\|   table <field_name1> <fieldname_2>`                                                                                                                            |
+|     Example        |     `\| table     \| head 20` # will return the top 20 events from the result   list.                                                                                   |
+
+##  Structuring in SPL - Head
+|     Explanation    |     `The head command returns the first 10 events   if no number is specified.                                                                   |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+|     Syntax         |     `\|   head <number>`                                                                                                                         |
+|     Example        |     `\| head`   # will return the top 10 events from the   result list     \| head 20    # will return the top 20 events from   the result list  |
+
+##  Structuring in SPL - Tail
+|     Explanation    |     `The Tail command returns the last 10   events if no number is specified.                                                                   |
+|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+|     Syntax         |     `\|   tail <number>`                                                                                                                        |
+|     Example        |     `\| tail` # will return the last 10 events from the result   list     \| tail 20   # will return the last 20 events from the   result list  |
+
+##  Structuring in SPL - Sort
+|     Explanation    |     `The Sort command allows us to order   the fields in ascending or descending order.   |
+|--------------------|-------------------------------------------------------------------------------------------|
+|     Syntax         |     `\| sort <field_name>`                                                                |
+|     Example        |     `\| sort Hostname # This will sort the result in Ascending order.`                    |
+
+##  Structuring in SPL - Reverse
+| Explanation | The `reverse` command simply reverses the order of the events. |
+|-------------|--------------------------------------------------------------|
+| Syntax      | `\|reverse`                                                  |
+| Example     | `<Search Query> \| reverse`                                  |
+
+
+## Transformational in SPL - Top
+|     Command        |     top                                                              |
+|--------------------|----------------------------------------------------------------------|
+|     Explanation    |     This   command returns frequent values for the top 10 events.    |
+|     Syntax         |     `\|   top  <field_name>     \|   top limit=6 <field_name>`         |
+|     Example        |     `top   limit=3 EventID`                                            |
+
+## Transformational in SPL - Rare
+|     Command        |     rare                                                                                                               |
+|--------------------|------------------------------------------------------------------------------------------------------------------------|
+|     Explanation    |     This   command does the opposite of top command as it returns the least frequent   values or bottom 10 results.    |
+|     Syntax         |     `\|   rare <field_name>     \|   rare limit=6 <field_name>`                                                          |
+|     Example        |     `rare   limit=3 EventID`                                                                                             |
+
+## Transformational in SPL - Highlight
+
+|     Command        |     highlight                                                                                  |
+|--------------------|------------------------------------------------------------------------------------------------|
+|     Explanation    |     The   highlight command shows the results in raw events mode with fields   highlighted.    |
+|     Syntax         |     `highlight        <field_name1>      <field_name2>`                                          |
+|     Example        |     `highlight   User, host, EventID, Image`                                                     |
+
+## Transformational in SPL - Stats
+|     Command    |     Explanation                                                            |     Syntax                                 |     Example                       |
+|----------------|----------------------------------------------------------------------------|--------------------------------------------|-----------------------------------|
+|     Average    |     This   command is used to calculate the average of the given field.    |     `stats   avg(field_name)`                |     `stats   avg(product_price)`|
+|     Max        |     It   will return the maximum value from the specific field.            |     `stats   max(field_name)`                |     `stats   max(user_age)`     |
+|     Min        |     It   will return the minimum value from the specific field.            |     `stats   min(field_name)`                |     `stats   min(product_price)`|
+|     Sum        |     It   will return the sum of the fields in a specific value.            |     `stats   sum(field_name)`                |     `stats   sum(product_cost)` |
+|     Count      |     The   count command returns the number of data occurrences.            |     `stats   count(function) AS new_NAME`    |     `stats   count(source_IP)`  |
+
+
+## Transformational in SPL - Chart
+
+|     Command        |     chart                                                                               |
+|--------------------|-----------------------------------------------------------------------------------------|
+|     Explanation    |     The   chart command is used to transform the data into tables or visualizations.    |
+|     Syntax         |     `\|   chart <function>`                                                               |
+|     Example        |     `\| chart count by   User`                                                            |
+
+## Transformational in SPL - Timechart
+|     Command        |     timechart                                                                                                                                           |
+|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     Explanation    |     The   timechart command returns the time series chart covering the field following   the function mentioned. Often combined with STATS commands.    |
+|     Syntax         |     `\|   timechart function  <field_name>`                                                                                                               |
+|     Example        |     `\| timechart count   by Image`                                                                                                                       |
+
 
 # ELK
 Elastic's ELK is an open source stack that consists of three applications (Elasticsearch, Logstash and Kibana) working in synergy to provide users with end-to-end search and visualization capabilities to analyze and investigate log file sources in real time.
@@ -648,4 +783,5 @@ ScriptBlockText Logging (Powershell)
 
 ### Execute-Assembly
 - winlog.event_data.ScriptBlockText: `*Reflection.Assembly* or *Load* or *ReadAllBytes*`
+
 
