@@ -307,7 +307,6 @@ Field of Interest:
 - src_ip: `Internal IP`
 - dest_port
 - dest_ip: `External IP` 
-- method
 - uri
 - uri_path
 - url
@@ -334,7 +333,7 @@ Field of Interest:
 - dest_ip: `Internal IP` 
 - http_method: `POST`
 - method
-- `filename=` or 
+- `filename=`
 	
 SPL of Interest:
 - rex: `filename`
