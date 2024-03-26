@@ -156,6 +156,21 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 - [Splunk.BOTS / Boss of the SOC Ver.1 Write-Up (30/30)](https://www.absolroot.com/ed93f920-3da1-4607-b990-6fce9fef5be1)
 - [TryHackMe-BP-Splunk/Ransomware](https://www.aldeid.com/wiki/TryHackMe-BP-Splunk/Ransomware)
 
+**Available Indexes and Their Counts**
+
+- This search command counts the number of events for each index. This preliminary search helps you understand the volume of data in each index and provides a broad view of your environment. 
+```
+| tstats count WHERE index=* by index
+```
+**Available Sourcetypes and Their Counts — Metadata Command**
+```
+|metadata type=sourcetypes index=botsv2
+|eval firstTime=strftime(firstTime, "%Y-%m-%d %H:%M:%S")
+|eval lastTime=strftime(lastTime, "%Y-%m-%d %H:%M:%S")
+|eval recentTime=strftime(recentTime, "%Y-%m-%d %H:%M:%S")
+|sort -totalCount
+```
+
 ## Data Sourcetypes
 `Windows-TA`
 - This is the default Windows-TA for Splunk and collects not only EventLog data but also registry information
@@ -474,6 +489,18 @@ host="we9041srv" sourcetype="WinEventLog:Security" EventCode="5145" Source_Addre
 host="we8105desk" ".txt" EventID="2" file_path="C:\\Users\\bob.smith.WAYNECORPINC*" 
 | dedup file_path 
 | stats count as unique_count
+```
+
+
+```
+index="botsv2" "C=US" sourcetype=suricata
+| transaction dest_ip
+| table dest_ip, src_ip, ssl_subject_common_name
+```
+```
+index="botsv2" "C=US" sourcetype=suricata
+| stats count by sourcetype
+
 ```
 
 # ELK
