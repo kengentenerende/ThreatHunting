@@ -418,13 +418,12 @@ Field of Interest:
 
 - sourcetype: `XmlWinEventLog:Microsoft-Windows-Sysmon/Operational`
 - eventcode=`1`
-- dest
-- dest_port 
 - host
-- src
-- src_port
+- Computer
 - CommandLine
+- Image
 - ParentCommandLine
+- ParentImage
 - user
 - ParentProcessId
 - ProcessId
@@ -434,10 +433,41 @@ SPL of Interest:
 - eval
 
 ```
-sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" host=we8105desk EventCode=1 VBS
+sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" host=we8105desk EventCode=1 *vbs* *js* *jse*
 | transaction ParentImage
 | eval lenCMD = len(CommandLine)
 | table ParentImage, ParentCommandLine, Image, CommandLine, lenCMD
+```
+
+## Execution: Malicious Process
+Field of Interest:
+
+- sourcetype: `XmlWinEventLog:Microsoft-Windows-Sysmon/Operational`
+- eventcode=`1`
+- host 
+- Computer
+- CommandLine
+- Image
+- ParentCommandLine
+- ParentImage
+- user
+- ParentProcessId
+- ProcessId
+
+SPL of Interest:
+- transaction
+- eval
+
+```
+sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" Computer="venus.frothly.local"
+| transaction ParentImage
+| table ParentImage, ParentCommandLine, Image, CommandLine
+```
+**Host Communication Flows**
+```
+index=botsv2 45.77.65.211 sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" 
+| stats count by src_ip src dest_ip dest
+| sort - count
 ```
 
 ## Initial Access: USB 
@@ -457,9 +487,8 @@ Reference:
 sourcetype=WinRegistry host="we8105desk" registry_value_name=friendlyname
 ```
 
-### Impact: File Decryption 
+## Impact: File Decryption 
 Field of Interest:
-
 
 sourcetype: `WinEventLog:Security`
 - Event Code: `5145` 
@@ -491,16 +520,111 @@ host="we8105desk" ".txt" EventID="2" file_path="C:\\Users\\bob.smith.WAYNECORPIN
 | stats count as unique_count
 ```
 
+## Resource Development: SSL Fingerprints for Threat Hunting
+Field of Interest:
 
+sourcetype: `suratica`
+- ssl_subject_common_name
+- tls.fingerprint
+- tls.issuerdn
+- src_ip
+- dest_ip
+
+
+SPL of Interest:
+- transaction
+- table
+
+**Pivoting of Indicator**
 ```
-index="botsv2" "C=US" sourcetype=suricata
+index="botsv2" "C=US" sourcetype=suricata 
 | transaction dest_ip
 | table dest_ip, src_ip, ssl_subject_common_name
-```
-```
-index="botsv2" "C=US" sourcetype=suricata
-| stats count by sourcetype
+or
+| stats count by dest_ip, ssl_subject_common_name, tls.fingerprint
+| table dest_ip, ssl_subject_common_name, tls.fingerprint, count
 
+Note: you may remove ssl subject common name on initial query.
+```
+
+**Network Communication Flows**
+```
+index="botsv2" 'TARGET_IP' sourcetype='AVALIABLE_SOURCETYPE'
+| stats count by src_ip dest_ip
+| sort - count
+```
+
+## Exfiltration: FTP
+Field of Interest:
+
+sourcetype: `stream:ftp`
+- dest_ip
+- src_ip
+- method
+- reply_code
+- reply_content
+- filename
+- loadway: `Upload` or `Download`
+
+
+SPL of Interest:
+- transaction
+- table
+
+
+```
+index="botsv2" 160.153.91.7
+| stats count by sourcetype
+```
+
+**Network Communication Flows**
+```
+index="botsv2" 160.153.91.7  sourcetype="stream:ftp"
+| transaction dest_ip
+| table dest_ip, src_ip, method, reply_code, reply_content, filename
+
+```
+**Filter Upload Activity**
+```
+index="botsv2" 160.153.91.7  sourcetype="stream:ftp" loadway=Upload
+| transaction dest_ip
+| table dest_ip, src_ip, method, reply_code, reply_content, filename
+```
+**Filter Download Activity**
+```
+index="botsv2" 160.153.91.7  sourcetype="stream:ftp" loadway=Download
+| transaction dest_ip
+| table dest_ip, src_ip, method, reply_code, reply_content, filename
+```
+
+Field of Interest:
+
+sourcetype: `wineventlog` or  `xmlwineventlog:microsoft-windows-sysmon/operational`
+- Event Code: `1` or `4688`
+- host 
+- Computer
+- CommandLine
+- Image
+- ParentCommandLine
+- ParentImage
+- user
+- ParentProcessId
+- ProcessId
+
+SPL of Interest:
+- transaction
+- table
+
+**Host Communication Flows**
+```
+index=botsv2 ftp sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" 
+| transaction host
+| table host CommandLine
+```
+```
+index=botsv2 ftp sourcetype="wineventlog" 
+| transaction host
+| table host Process_Command_Line
 ```
 
 # ELK
