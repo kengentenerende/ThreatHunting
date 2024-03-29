@@ -463,12 +463,6 @@ sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" Computer="venus
 | transaction ParentImage
 | table ParentImage, ParentCommandLine, Image, CommandLine
 ```
-**Host Communication Flows**
-```
-index=botsv2 45.77.65.211 sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" 
-| stats count by src_ip src dest_ip dest
-| sort - count
-```
 
 ## Initial Access: USB 
 Field of Interest:
@@ -547,7 +541,6 @@ or
 Note: you may remove ssl subject common name on initial query.
 ```
 
-**Network Communication Flows**
 ```
 index="botsv2" 'TARGET_IP' sourcetype='AVALIABLE_SOURCETYPE'
 | stats count by src_ip dest_ip
@@ -625,6 +618,33 @@ index=botsv2 ftp sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational
 index=botsv2 ftp sourcetype="wineventlog" 
 | transaction host
 | table host Process_Command_Line
+```
+
+## Exfiltration: DNS
+Field of Interest:
+
+sourcetype: `stream:ftp`
+- dest_ip
+- src_ip
+- hostname
+- query
+- bytes_in
+- bytes_out
+
+
+SPL of Interest:
+- transaction
+- table
+- stats
+
+```
+index="botsv2" sourcetype="stream:dns" hildegardsfarm.com
+| timechart span=1s count by dest_ip
+```
+```
+index="botsv2" sourcetype="stream:dns" hildegardsfarm.com NOT 8.8.8.8 NOT 4.4.4.4
+| transaction dest_ip
+| table dest_ip, src_ip, hostname{}, query{}, bytes_in, bytes_out
 ```
 
 # ELK
