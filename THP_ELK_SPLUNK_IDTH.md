@@ -631,7 +631,6 @@ sourcetype: `stream:ftp`
 - bytes_in
 - bytes_out
 
-
 SPL of Interest:
 - transaction
 - table
@@ -642,7 +641,7 @@ index="botsv2" sourcetype="stream:dns" hildegardsfarm.com
 | timechart span=1s count by dest_ip
 ```
 ```
-index="botsv2" sourcetype="stream:dns" hildegardsfarm.com NOT 8.8.8.8 NOT 4.4.4.4
+index="botsv2" sourcetype="stream:dns" hildegardsfarm.com 
 | transaction dest_ip
 | table dest_ip, src_ip, hostname{}, query{}, bytes_in, bytes_out
 ```
