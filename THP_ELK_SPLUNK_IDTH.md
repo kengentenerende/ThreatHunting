@@ -154,7 +154,7 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 - [Threat Hunting on Splunk Beginner Cheat Sheet — Mastering Sourcetypes & Fields of Interest](https://medium.com/@shunxianou/threat-hunting-on-splunk-beginner-cheat-sheet-mastering-sourcetypes-fields-of-interest-3dee5541b901)
 - [TryHackMe-BP-Splunk/Advanced-Persitent-Threat](https://www.aldeid.com/wiki/TryHackMe-BP-Splunk/Advanced-Persitent-Threat)
 - [Splunk.BOTS / Boss of the SOC Ver.1 Write-Up (30/30)](https://www.absolroot.com/ed93f920-3da1-4607-b990-6fce9fef5be1)
-- [TryHackMe-BP-Splunk/Ransomware](https://www.aldeid.com/wiki/TryHackMe-BP-Splunk/Ransomware)
+- [TryHackMe-BP-Splunk](https://www.aldeid.com/wiki/TryHackMe-BP-Splunk)
 
 **Available Indexes and Their Counts**
 
@@ -270,11 +270,57 @@ or
 | transaction passwd 
 | table duration
 ```
+**Calculate Duration**
+```
+index=botsv1 sourcetype=stream:http form_data=*username*passwd* | rex field=form_data "passwd=(?<p>\w+)" 
+| transaction p
+| eval dur=round(duration,2)
+| table dur
+```
 **Check Activity per IP**
 ```
 index=* sourcetype="stream:http" imreallynotbatman.com *passwd*
 | transaction src_ip
 | table src_ip, form_data
+```
+**Check Activity Average String Length**
+```
+index=botsv1 imreallynotbatman.com sourcetype=stream:http http_method="POST" form_data=*username*passwd* 
+| rex field=form_data "passwd=(?<p>\w+)" 
+| eval pl=len(p) 
+| stats avg(pl) as av
+| eval avg_count=round(av,0) 
+| table avg_count
+```
+
+## Initial Access: Spear Phishing
+Field of Interest:
+
+- source: `stream:smtp`
+- attach_filename{}
+- attach_type{}
+- file_name
+- file_hash
+- file_type{}
+- receiver
+- receiver_alias
+- receiver_email
+- sender
+- sender_alias
+- sender_email
+- src_ip
+- dest_ip
+- subject
+	
+SPL of Interest:
+- stats: `attachment_filename{}`
+- transaction: `sender`
+- table
+
+```
+index=botsv2 sourcetype="stream:smtp" attach_filename{}="invoice.zip"
+| transaction sender
+| table  sender, receiver, subject, attach_filename{}, src_ip, dest_ip
 ```
 
 ## Reconnaissance: Scanning Vulnerability 
@@ -310,7 +356,7 @@ or
 | stats count by src_ip
 ```
 ```
-source="stream:http" AND site=*imreallynotbatman.com* AND http_method=POST AND src_headers=*acunetix*
+source="stream:http" AND site=*imreallynotbatman.com* AND http_method=POST AND src_headers=*SUSPICIOUS_TOOL*
 | stats values(src_headers) as src_headers c by src | sort -c
 | table src c src_headers
 ```
@@ -458,10 +504,17 @@ SPL of Interest:
 - transaction
 - eval
 
+**Sort by Parent CommandLine and Image**
 ```
 sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" Computer="venus.frothly.local"
 | transaction ParentImage
 | table ParentImage, ParentCommandLine, Image, CommandLine
+```
+**Sort by initial execution of Parent CommandLine and Image**
+```
+*ARTIFACT* sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" CommandLine=*
+| table _time, CommandLine, ProcessId, ParentCommandLine, ParentProcessId 
+| reverse
 ```
 
 ## Initial Access: USB 
