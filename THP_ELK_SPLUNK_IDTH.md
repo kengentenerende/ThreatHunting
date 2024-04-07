@@ -311,8 +311,11 @@ Field of Interest:
 - src_ip
 - dest_ip
 - subject
+- content_body{}
+- content - `check for originating sender and ip`
 	
 SPL of Interest:
+- rex `field=content "sender IP is (?<sender_ip>\b(?:\d{1,3}\.){3}\d{1,3}\b)"`
 - stats: `attachment_filename{}`
 - transaction: `sender`
 - table
@@ -320,7 +323,7 @@ SPL of Interest:
 ```
 index=botsv2 sourcetype="stream:smtp" attach_filename{}="invoice.zip"
 | transaction sender
-| table  sender, receiver, subject, attach_filename{}, src_ip, dest_ip
+| table sender, receiver, subject, content_body{}, attach_filename{}, src_ip, sender_ip, dest_ip
 ```
 
 ## Reconnaissance: Scanning Vulnerability 
@@ -736,7 +739,7 @@ Kibana Query Language. Make sure to enable KQL for every session for better sear
 - [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) - Atomic Red Team is a library of tests mapped to the MITRE ATT&CK® framework. Security teams can use Atomic Red Team to quickly, portably, and reproducibly test their environments.
 - [MITRE Cyber Analytics Repository](https://car.mitre.org/analytics/by_technique)- The MITRE Cyber Analytics Repository (CAR) is a knowledge base of analytics developed by MITRE based on the MITRE ATT&CK adversary model.
 - [Threat Hunter Playbook](https://threathunterplaybook.com/intro.html) - The Threat Hunter Playbook is a community-driven, open source project to share detection logic, adversary tradecraft and resources to make detection development more efficient. 
-
+- [Alerta Temprana de Amenazas de Seguridad con Apache Kafka y la Pila ELK](https://uvadoc.uva.es/bitstream/handle/10324/50431/TFG-G5267.pdf?sequence=1)
 
 ## Execution: Rundll32
 Fields of Interest:
