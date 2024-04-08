@@ -718,7 +718,7 @@ sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" host=we8105desk
 
 **Sort by Parent CommandLine and Image**
 ```
-sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" Computer="venus.frothly.local"
+sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" host="venus" user=*service3*
 | transaction ParentImage
 | table ParentImage, ParentCommandLine, Image, CommandLine
 ```
@@ -728,6 +728,49 @@ sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" Computer="venus
 | table _time, CommandLine, ProcessId, ParentCommandLine, ParentProcessId 
 | reverse
 ```
+```
+index=botsv2 *hostname* schtasks.exe
+```
+```
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" *hostname* *suspicious_tools*
+```
+**Base64 Powershell**
+```
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational"  ParentCommandLine=* WwBSAGUARgBdAC4AQQBTAHMARQBNAGIATABZAC4ARwBlAFQAVABZAHAA*
+|  stats count by host
+AND
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational"  ParentCommandLine=* WwBSAGUARgBdAC4AQQBTAHMARQBNAGIATABZAC4ARwBlAFQAVABZAHAA*
+|  table _time host user CommandLine
+|  sort-_time
+|  reverse
+OR
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational"  ParentCommandLine=* WwBSAGUARgBdAC4AQQBTAHMARQBNAGIATABZAC4ARwBlAFQAVABZAHAA*
+|  transaction host
+|  table _time host user CommandLine
+|  sort-_time
+|  reverse
+```
+**Correlate Commandlinec with same ParentCommandLine**
+```
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational"  ParentCommandLine=*powershell*-enc* (host=wrk-btun OR host=mercury) 
+| stats values(CommandLine) as CommandLine by ParentCommandLine 
+| fields - ParentCommandLine
+```
+**Correlate Powershell Execution**
+```
+index=botsv2 sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" (CommandLine=*powershell*-enc* OR ParentCommandLine=*powershell*-enc*)
+| eval shortCL=substr(CommandLine,1,90)
+| eval shortPCL=substr(ParentCommandLine,1,80)
+| transaction ParentImage
+| table _time host user ParentImage shortPCL ParentProcessId ProcessId shortCL
+| sort + _time
+```
+**Correlate PID and PPID**
+```
+index=botsv2 sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" (CommandLine=*powershell*-enc* OR ParentCommandLine=*powershell*-enc*) (host=wrk-btun OR host=mercury) 
+| stats count by ParentProcessId ProcessId
+```
+
 
 ## Initial Access: USB 
 `Field of Interest:`
