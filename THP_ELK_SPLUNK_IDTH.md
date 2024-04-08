@@ -557,7 +557,7 @@ Registry (winregistry)
 index="botsv2" sourcetype="winregistry" Software\\Microsoft\\Network
 ```
 
-### Persistence: Create Account
+## Persistence: Create Account
 `Fields of Interest:`
 
 Process
