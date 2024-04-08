@@ -214,7 +214,7 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 * winregistry
 
 ## Reconnaissance: BruteForce Attack
-Field of Interest:
+`Field of Interest:`
 
 - source: `stream:http`
 - form_data
@@ -233,7 +233,7 @@ Field of Interest:
 - username: `single source`
 - timestamp
 	
-SPL of Interest:
+`SPL of Interest:`
 - rex
 - eval
 - stats: `avg()`, count`()`
@@ -294,12 +294,12 @@ index=botsv1 imreallynotbatman.com sourcetype=stream:http http_method="POST" for
 ```
 
 ## Reconnaissance: User-Agent Hunting Strings
-Field of Interest:
+`Field of Interest:`
 - source: `stream:http`
 - http_user_agent 
 - http_content_type
 
-SPL of Interest:
+`SPL of Interest:`
 - stats `count by http_user_agent`
 - sort
 
@@ -318,7 +318,7 @@ Reference:
 - [Spur - detection of anonymous infrastructure](https://app.spur.us/context?)
 
 ## Reconnaissance: Scanning Vulnerability 
-Field of Interest:
+`Field of Interest:`
 
 - source: `stream:http`
 - form_data
@@ -335,7 +335,7 @@ Field of Interest:
 - dest_port
 - timestamp
 	
-SPL of Interest:
+`SPL of Interest:`
 - rex
 - eval
 - stats: `values()`
@@ -356,7 +356,7 @@ source="stream:http" AND site=*imreallynotbatman.com* AND http_method=POST AND s
 ```
 
 ## Initial Access: Spear Phishing
-Field of Interest:
+`Field of Interest:`
 
 - source: `stream:smtp`
 - attach_filename{}
@@ -376,7 +376,7 @@ Field of Interest:
 - content_body{}
 - content - `check for originating sender and ip`
 	
-SPL of Interest:
+`SPL of Interest:`
 - rex `field=content "sender IP is (?<sender_ip>\b(?:\d{1,3}\.){3}\d{1,3}\b)"`
 - stats: `attachment_filename{}`
 - transaction: `sender`
@@ -398,7 +398,7 @@ Fields of Interest:
 - Process_Command_Line
 
 	
-SPL of Interest:
+`SPL of Interest:`
 - stats: 
 - transaction: 
 - table
@@ -450,7 +450,7 @@ Fields of Interest:
 - Image
 - CommandLine
 
-SPL of Interest:
+`SPL of Interest:`
 - eval
 - transaction
 - table
@@ -477,7 +477,7 @@ Fields of Interest:
 - ParentCommandLine
 - CommandLine
 
-SPL of Interest:
+`SPL of Interest:`
 - eval
 - table
 
@@ -552,7 +552,7 @@ index="botsv2" sourcetype="winregistry" Software\\Microsoft\\Network
 ```
 
 ## Command and Control: Outbound Connection with Suspicious File Retrieval
-Field of Interest:
+`Field of Interest:`
 
 - source: `stream:http`
 - c_ip
@@ -565,7 +565,7 @@ Field of Interest:
 - uri_path
 - url
 	
-SPL of Interest:
+`SPL of Interest:`
 - stats: `count(url/uri)`
 
 **Note: Perform extended checking of the reputation of External IP**
@@ -581,7 +581,7 @@ index=* sourcetype=stream:http c_ip="192.168.250.100"
 ```
 
 ## Command and Control: Outbound Connection with Suspicious File Download
-Field of Interest:
+`Field of Interest:`
 
 - source: `stream:http` or `stream:http`
 - c_ip
@@ -593,7 +593,7 @@ Field of Interest:
 - method
 - `filename=`
 	
-SPL of Interest:
+`SPL of Interest:`
 - rex: `filename`
 - stats: `count(url/uri)`
 
@@ -607,18 +607,18 @@ index=* sourcetype=stream:http dest="192.168.250.70" "multipart/form-data"
 ```
 
 ## Command and Control: Suspicious Traffic
-Field of Interest:
+`Field of Interest:`
 
 - source: `suricata`
 - src_ip
-- src_ip: 
+- src_port 
+- dest_ip
 - dest_port
-- dest_ip: 
 - method_parameter
 - method
 - reply_content
 	
-SPL of Interest:
+`SPL of Interest:`
 - rex
 - stats
 
@@ -627,8 +627,30 @@ sourcetype=suricata AND cerber
 | stats count by alert.signature_id
 ```
 
+`Field of Interest:`
+
+- source: `pan.traffic`
+- src_ip
+- src_port
+- dest_ip: 
+- dest_port
+- user
+
+`SPL of Interest:`
+- rex
+- stats
+- eval
+- timechart
+
+**Firewall Investigation and Pivoting Usernames**
+```
+index=botsv2 sourcetype="pan:traffic" dest=45.77.65.211
+| eval uniq=src_ip." ".user 
+| timechart sum(bytes) as bytes by uniq
+```
+
 ## Command and Control: Suspicious Traffic (DNS)
-Field of Interest:
+`Field of Interest:`
 
 - source: `suricata`
 - src_ip
@@ -639,7 +661,7 @@ Field of Interest:
 - query
 - bytes
 	
-SPL of Interest:
+`SPL of Interest:`
 - transaction
 - stats
 
@@ -650,7 +672,7 @@ sourcetype="stream:dns" src_ip="192.168.250.100" record_type=A
 ```
 
 ## Execution: Malicious Scripting
-Field of Interest:
+`Field of Interest:`
 
 - sourcetype: `XmlWinEventLog:Microsoft-Windows-Sysmon/Operational`
 - eventcode=`1`
@@ -664,7 +686,7 @@ Field of Interest:
 - ParentProcessId
 - ProcessId
 
-SPL of Interest:
+`SPL of Interest:`
 - transaction
 - eval
 
@@ -676,7 +698,7 @@ sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" host=we8105desk
 ```
 
 ## Execution: Malicious Process Execution
-Field of Interest:
+`Field of Interest:`
 
 - sourcetype: `XmlWinEventLog:Microsoft-Windows-Sysmon/Operational`
 - eventcode=`1`
@@ -690,7 +712,7 @@ Field of Interest:
 - ParentProcessId
 - ProcessId
 
-SPL of Interest:
+`SPL of Interest:`
 - transaction
 - eval
 
@@ -708,7 +730,7 @@ sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" Computer="venus
 ```
 
 ## Initial Access: USB 
-Field of Interest:
+`Field of Interest:`
 
 - sourcetype: `WinRegistry`
 - registry_value_name
@@ -725,7 +747,7 @@ sourcetype=WinRegistry host="we8105desk" registry_value_name=friendlyname
 ```
 
 ## Impact: File Decryption 
-Field of Interest:
+`Field of Interest:`
 
 sourcetype: `WinEventLog:Security`
 - Event Code: `5145` 
@@ -741,7 +763,7 @@ sourcetype: `WinEventLog:Microsoft-Windows-Sysmon/Operational`
 - direction
 - dvc
 
-SPL of Interest:
+`SPL of Interest:`
 - dedup
 - table
 - stat
@@ -758,7 +780,7 @@ host="we8105desk" ".txt" EventID="2" file_path="C:\\Users\\bob.smith.WAYNECORPIN
 ```
 
 ## Resource Development: SSL Fingerprints for Threat Hunting
-Field of Interest:
+`Field of Interest:`
 
 sourcetype: `suratica`
 - ssl_subject_common_name
@@ -768,7 +790,7 @@ sourcetype: `suratica`
 - dest_ip
 
 
-SPL of Interest:
+`SPL of Interest:`
 - transaction
 - table
 
@@ -796,7 +818,7 @@ index="botsv2" 'TARGET_IP' sourcetype='AVALIABLE_SOURCETYPE'
 | sort - count
 ```
 ## Collection: SMB
-Field of Interest:
+`Field of Interest:`
 
 sourcetype: `stream:smb`
 - dest_ip
@@ -806,7 +828,7 @@ sourcetype: `stream:smb`
 - command
 - flowid
 
-SPL of Interest:
+`SPL of Interest:`
 - transaction
 - table
 - eval `uniq=src_ip." ".dest_ip`
@@ -857,7 +879,7 @@ index="botsv2" (.pdf OR .tgz OR .doc OR .xls) sourcetype="stream:smb"
 ```
 
 ## Exfiltration: FTP
-Field of Interest:
+`Field of Interest:`
 
 sourcetype: `stream:ftp`
 - dest_ip
@@ -870,7 +892,7 @@ sourcetype: `stream:ftp`
 f
 
 
-SPL of Interest:
+`SPL of Interest:`
 - transaction
 - table
 
@@ -905,7 +927,7 @@ index="botsv2" 160.153.91.7  sourcetype="stream:ftp" loadway=Download
 | table dest_ip, src_ip, method, reply_code, reply_content, filename
 ```
 
-Field of Interest:
+`Field of Interest:`
 
 sourcetype: `wineventlog` or  `xmlwineventlog:microsoft-windows-sysmon/operational`
 - Event Code: `1` or `4688`
@@ -919,7 +941,7 @@ sourcetype: `wineventlog` or  `xmlwineventlog:microsoft-windows-sysmon/operation
 - ParentProcessId
 - ProcessId
 
-SPL of Interest:
+`SPL of Interest:`
 - transaction
 - table
 
@@ -936,7 +958,7 @@ index=botsv2 ftp sourcetype="wineventlog"
 ```
 
 ## Exfiltration: DNS
-Field of Interest:
+`Field of Interest:`
 
 sourcetype: `stream:ftp`
 - dest_ip
@@ -946,7 +968,7 @@ sourcetype: `stream:ftp`
 - bytes_in
 - bytes_out
 
-SPL of Interest:
+`SPL of Interest:`
 - transaction
 - table
 - stats
