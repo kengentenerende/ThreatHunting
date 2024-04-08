@@ -293,38 +293,29 @@ index=botsv1 imreallynotbatman.com sourcetype=stream:http http_method="POST" for
 | table avg_count
 ```
 
-## Initial Access: Spear Phishing
+## Reconnaissance: User-Agent Hunting Strings
 Field of Interest:
+- source: `stream:http`
+- http_user_agent 
+- http_content_type
 
-- source: `stream:smtp`
-- attach_filename{}
-- attach_type{}
-- file_name
-- file_hash
-- file_type{}
-- receiver
-- receiver_alias
-- receiver_email
-- sender
-- sender_alias
-- sender_email
-- src_ip
-- dest_ip
-- subject
-- content_body{}
-- content - `check for originating sender and ip`
-	
 SPL of Interest:
-- rex `field=content "sender IP is (?<sender_ip>\b(?:\d{1,3}\.){3}\d{1,3}\b)"`
-- stats: `attachment_filename{}`
-- transaction: `sender`
-- table
+- stats `count by http_user_agent`
+- sort
 
 ```
-index=botsv2 sourcetype="stream:smtp" attach_filename{}="invoice.zip"
-| transaction sender
-| table sender, receiver, subject, content_body{}, attach_filename{}, src_ip, sender_ip, dest_ip
+index="botsv2" sourcetype="stream:http" "TARGET_DOMAIN OR SUSPICIOUS_OS"
+| stats count by http_user_agent 
+| sort - count
 ```
+```
+index="botsv2" sourcetype="stream:http" http_user_agent="*NaenaraBrowser*"
+| stats count by src_ip dest_ip
+```
+
+Reference:
+- [WhatIsMyBrowser - User Agents](https://explore.whatismybrowser.com/useragents/parse/#parse-useragent)
+- [Spur - detection of anonymous infrastructure](https://app.spur.us/context?)
 
 ## Reconnaissance: Scanning Vulnerability 
 Field of Interest:
@@ -364,6 +355,64 @@ source="stream:http" AND site=*imreallynotbatman.com* AND http_method=POST AND s
 | table src c src_headers
 ```
 
+## Initial Access: Spear Phishing
+Field of Interest:
+
+- source: `stream:smtp`
+- attach_filename{}
+- attach_type{}
+- file_name
+- file_hash
+- file_type{}
+- receiver
+- receiver_alias
+- receiver_email
+- sender
+- sender_alias
+- sender_email
+- src_ip
+- dest_ip
+- subject
+- content_body{}
+- content - `check for originating sender and ip`
+	
+SPL of Interest:
+- rex `field=content "sender IP is (?<sender_ip>\b(?:\d{1,3}\.){3}\d{1,3}\b)"`
+- stats: `attachment_filename{}`
+- transaction: `sender`
+- table
+
+```
+index=botsv2 sourcetype="stream:smtp" attach_filename{}="invoice.zip"
+| transaction sender
+| table sender, receiver, subject, content_body{}, attach_filename{}, src_ip, sender_ip, dest_ip
+```
+
+## Defense Evasion: Indicator Removal on Host
+Fields of Interest:
+
+- EventCode: `*104*` or `*1102*`
+- RecordNumber
+- Account_Name
+- New_Process_Name
+- Process_Command_Line
+
+	
+SPL of Interest:
+- stats: 
+- transaction: 
+- table
+- sort
+
+```
+index=botsv2 sourcetype=wineventlog EventCode=1102
+```
+```
+index=botsv2 wevtutil.exe sourcetype=wineventlog
+| table _time EventCode RecordNumber Account_Name New_Process_Name Process_Command_Line
+| sort + RecordNumber
+```
+
 ## Command and Control: Outbound Connection with Suspicious File Retrieval
 Field of Interest:
 
@@ -392,6 +441,8 @@ or
 index=* sourcetype=stream:http c_ip="192.168.250.100"
 | stats count by url
 ```
+
+
 
 ## Command and Control: Outbound Connection with Suspicious File Download
 Field of Interest:
@@ -488,7 +539,7 @@ sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" host=we8105desk
 | table ParentImage, ParentCommandLine, Image, CommandLine, lenCMD
 ```
 
-## Execution: Malicious Process
+## Execution: Malicious Process Execution
 Field of Interest:
 
 - sourcetype: `XmlWinEventLog:Microsoft-Windows-Sysmon/Operational`
@@ -602,6 +653,66 @@ index="botsv2" 'TARGET_IP' sourcetype='AVALIABLE_SOURCETYPE'
 | stats count by src_ip dest_ip
 | sort - count
 ```
+## Collection: SMB
+Field of Interest:
+
+sourcetype: `stream:smb`
+- dest_ip
+- src_ip
+- bytes
+- filename
+- command
+- flowid
+
+SPL of Interest:
+- transaction
+- table
+- eval `uniq=src_ip." ".dest_ip`
+- timechart `count by uniq`
+
+
+```
+index="botsv2" 160.153.91.7
+| stats count by sourcetype
+```
+```
+index="botsv2" (.pdf OR .tgz OR .doc OR .xls) sourcetype="stream:smb"
+| stats count by sourcetype
+| sort - count
+```
+**Source and Destination Overtime**
+```
+index="botsv2" (.pdf OR .tgz OR .doc OR .xls) sourcetype="stream:smb"
+| eval uniq=src_ip." ".dest_ip
+| timechart count by uniq
+```
+**Count By Filenames And Sort By Unique Flow ID**
+```
+index="botsv2" (.pdf OR .tgz OR .doc OR .xls) sourcetype="stream:smb" 
+| transaction flow_id, dest_ip 
+| eval total_filenames=mvcount(filename) 
+| table flow_id, dest_ip, src_ip, command, total_filenames
+AND
+index="botsv2" flow_id="d7370639-8ca9-40d3-a5f8-dd6547d4ff99" sourcetype="stream:smb" 
+| stats count by command
+```
+**Sort By Sum of Bytes In and Out**
+```
+index="botsv2" sourcetype="stream:smb" flow_id=d7370639-8ca9-40d3-a5f8-dd6547d4ff99  command="smb2 read"
+| stats count sum(bytes_in) AS b_in sum(bytes_out) AS b_out by src_ip dest_ip
+```
+**Sort via Destination**
+```
+index="botsv2" (.pdf OR .tgz OR .doc OR .xls) sourcetype="stream:smb"
+| transaction dest_ip
+| table dest_ip, src_ip, command, bytes, filename
+```
+**Most Frequently Seen Files**
+```
+index="botsv2" (.pdf OR .tgz OR .doc OR .xls) sourcetype="stream:smb"
+| stats count by src_ip, dest_ip, filename
+| sort - count
+```
 
 ## Exfiltration: FTP
 Field of Interest:
@@ -614,6 +725,7 @@ sourcetype: `stream:ftp`
 - reply_content
 - filename
 - loadway: `Upload` or `Download`
+f
 
 
 SPL of Interest:
@@ -624,6 +736,11 @@ SPL of Interest:
 ```
 index="botsv2" 160.153.91.7
 | stats count by sourcetype
+```
+```
+index="botsv2" (.pdf OR .tgz OR .doc OR .xls)
+| stats count by sourcetype
+| sort - count
 ```
 
 **Network Communication Flows**
@@ -666,7 +783,7 @@ SPL of Interest:
 
 **Host Communication Flows**
 ```
-index=botsv2 ftp sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" 
+index=botsv2 "ftp" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" 
 | transaction host
 | table host CommandLine
 ```
