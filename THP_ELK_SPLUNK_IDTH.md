@@ -155,6 +155,12 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 - [TryHackMe-BP-Splunk/Advanced-Persitent-Threat](https://www.aldeid.com/wiki/TryHackMe-BP-Splunk/Advanced-Persitent-Threat)
 - [Splunk.BOTS / Boss of the SOC Ver.1 Write-Up (30/30)](https://www.absolroot.com/ed93f920-3da1-4607-b990-6fce9fef5be1)
 - [TryHackMe-BP-Splunk](https://www.aldeid.com/wiki/TryHackMe-BP-Splunk)
+- [mitre_attack_xml_eventlogs](https://github.com/BoredHackerBlog/mitre_attack_xml_eventlogs/tree/db5699e016a223c31d34a6d3024ac9cd33d87f52?tab=readme-ov-file) - MITRE ATTACK evtx samples from EVTX-to-MITRE-Attack & EVTX-ATTACK-SAMPLES repos in XML format
+- [EVTX-ATTACK-SAMPLES](https://github.com/Lichtsinnig/EVTX-ATTACK-SAMPLES/tree/57395181405d5e3e91edfb70c7ffefad4fcfc04f) - This is a container for windows events samples associated to specific attack and post-exploitation techniques
+- [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) - Atomic Red Team is a library of tests mapped to the MITRE ATT&CK® framework. Security teams can use Atomic Red Team to quickly, portably, and reproducibly test their environments.
+- [MITRE Cyber Analytics Repository](https://car.mitre.org/analytics/by_technique)- The MITRE Cyber Analytics Repository (CAR) is a knowledge base of analytics developed by MITRE based on the MITRE ATT&CK adversary model.
+- [Threat Hunter Playbook](https://threathunterplaybook.com/intro.html) - The Threat Hunter Playbook is a community-driven, open source project to share detection logic, adversary tradecraft and resources to make detection development more efficient. 
+- [Alerta Temprana de Amenazas de Seguridad con Apache Kafka y la Pila ELK](https://uvadoc.uva.es/bitstream/handle/10324/50431/TFG-G5267.pdf?sequence=1)
 
 **Available Indexes and Their Counts**
 
@@ -551,6 +557,69 @@ Registry (winregistry)
 index="botsv2" sourcetype="winregistry" Software\\Microsoft\\Network
 ```
 
+### Persistence: Create Account
+Fields of Interest:
+
+Process
+- EventCode: `*4720* `
+- Account_Name: `Requestor`
+- SAM_Account_Name: `Created Account`
+- ComputerName
+- Logon_ID
+- host 
+
+`Event IDs specific to account logon events`
+- 4624 (successful logon) 
+- 4625 (failed logon) 
+- 4634 (successful logoff) 
+- 4647 (user-initiated logoff) 
+- 4648 (logon using explicit credentials) 
+- 4672 (special privileges assigned) 
+- 4768 (Kerberos ticket (TGT) requested) 
+- 4769 (Kerberos service ticket requested) 
+- 4771 (Kerberos pre-auth failed) 
+- 4776 (attempted to validate credentials) 
+- 4778 (session reconnected) 
+- 4779 (session disconnected)
+
+`SPL of Interest:`
+- transpose
+- table
+- rex
+
+```
+index="botsv2" sourcetype=wineventlog EventCode=4720
+```
+**Pivot Newly Created Account**
+```
+index="botsv2" sourcetype=wineventlog EventCode=4720
+| table _time host Account_Name SAM_Account_Name
+```
+**Account Comparison**
+```
+index=botsv2 sourcetype=wineventlog EventCode=4720 svcvnc
+| table _time host Account_Name SAM_Account_Name Display_Name User_Principal_Name Home_Directory Home_Drive Script_Path Profile_Path User_Workstations Password_Last_Set Account_Expires Logon_Hours
+| transpose
+```
+**Pivoting other EventCode**
+```
+index=botsv2 sourcetype=wineventlog (host=wrk-klagerf OR host=wrk-btun) EventCode!=4688 svcvnc
+| eval current_account=mvindex(Security_ID,0)
+| eval account_modified=mvindex(Security_ID,1)
+| rex field=Message "(?<short_message>.*\r)"
+| table _time host EventCode current_account account_modified Security_ID short_message
+| sort _time
+```
+**Pivoting Logon Using Explicit Credentials**
+```
+index=botsv2 sourcetype=wineventlog EventCode=4648 service3
+| eval current_account=mvindex(Security_ID,0)
+| eval account_modified=mvindex(Security_ID,1)
+| rex field=Message "(?<short_message>.*\r)"
+| table _time host EventCode current_account account_modified Security_ID short_message
+| sort _time
+```
+
 ## Command and Control: Outbound Connection with Suspicious File Retrieval
 `Field of Interest:`
 
@@ -939,7 +1008,12 @@ f
 - transaction
 - table
 
-
+**Check for Notable NetFlow**
+```
+index="botsv2" ftp
+| stats count by sourcetype
+| sort - count
+```
 ```
 index="botsv2" 160.153.91.7
 | stats count by sourcetype
@@ -956,6 +1030,28 @@ index="botsv2" 160.153.91.7  sourcetype="stream:ftp"
 | transaction dest_ip
 | table dest_ip, src_ip, method, reply_code, reply_content, filename
 
+```
+**Time Series Data**
+```
+index="botsv2" ftp sourcetype="pan:*"  src=* dest=*
+| eval uniq=src." ".dest
+| timechart count by uniq
+OR
+index="botsv2" ftp sourcetype="suricata"  src=* dest=*
+| eval uniq=src." ".dest
+| timechart count by uniq
+OR
+index="botsv2" ftp sourcetype="stream:ftp"   src=* dest=*
+| eval uniq=src." ".dest
+| timechart count by uniq
+```
+**FTP Activities**
+```
+index="botsv2" ftp sourcetype="stream:ftp"
+| transaction dest_ip
+| table _time dest_ip src_ip method method_parameter reply_content 
+| sort - _time
+| reverse
 ```
 **Filter Upload Activity**
 ```
@@ -1017,13 +1113,59 @@ sourcetype: `stream:ftp`
 - stats
 
 ```
+index="botsv2" sourcetype="stream:dns" 160.153.91.7
+| table _time name src src_dns dest
+```
+```
 index="botsv2" sourcetype="stream:dns" hildegardsfarm.com
 | timechart span=1s count by dest_ip
 ```
+**Sort by Destination**
 ```
 index="botsv2" sourcetype="stream:dns" hildegardsfarm.com 
 | transaction dest_ip
 | table dest_ip, src_ip, hostname{}, query{}, bytes_in, bytes_out
+```
+**Filter DNS QUERY**
+```
+index=botsv2 sourcetype=stream:dns hildegardsfarm.com message_type=QUERY
+| table _time query src dest
+OR 
+index=botsv2 sourcetype=stream:dns hildegardsfarm.com message_type=QUERY
+| transaction src | dedup src, dest
+| eval total_query=mvcount(query) 
+| table src dest total_query
+```
+**URL TOOLBOX**
+```
+index=botsv2 sourcetype=stream:dns hildegardsfarm.com message_type=QUERY query=*.hildegardsfarm.com
+| eval query=mvdedup(query)
+| eval list="mozilla"
+| `ut_parse_extended(query,list)`
+| `ut_shannon(ut_subdomain)`
+| table src dest query ut_subdomain ut_shannon
+```
+**Average Length of the Subdomain**
+```
+index=botsv2 sourcetype=stream:dns hildegardsfarm.com message_type=QUERY query=*.hildegardsfarm.com
+| eval query=mvdedup(query)
+| eval list="mozilla"
+| `ut_parse_extended(query,list)`
+| `ut_shannon(ut_subdomain)`
+| eval sublen = length(ut_subdomain)
+| table ut_domain ut_subdomain ut_shannon sublen
+| stats count avg(ut_shannon) as avg_entropy avg(sublen) as avg_sublen stdev(sublen) as stdev_sublen by ut_domain
+```
+**DNS Exfiltration Visualization**
+```
+index=botsv2 sourcetype=stream:dns hildegardsfarm.com message_type=QUERY query=*.hildegardsfarm.com
+| eval query=mvdedup(query)
+| eval list="mozilla"
+| `ut_parse_extended(query,list)`
+| `ut_shannon(ut_subdomain)`
+| eval sublen = length(ut_subdomain)
+| stats count avg(ut_shannon) as avg_entropy avg(sublen) as avg_sublen stdev(sublen) as stdev_sublen by ut_domain src dest
+| sort - count
 ```
 
 # ELK
@@ -1058,13 +1200,6 @@ Note: On the search bar part, you may see there's a **KQL** there. KQL stands fo
 Kibana Query Language. Make sure to enable KQL for every session for better search usage.
 
 # ELK - Intel-driven Threat Hunting
-- [mitre_attack_xml_eventlogs](https://github.com/BoredHackerBlog/mitre_attack_xml_eventlogs/tree/db5699e016a223c31d34a6d3024ac9cd33d87f52?tab=readme-ov-file) - MITRE ATTACK evtx samples from EVTX-to-MITRE-Attack & EVTX-ATTACK-SAMPLES repos in XML format
-- [EVTX-ATTACK-SAMPLES](https://github.com/Lichtsinnig/EVTX-ATTACK-SAMPLES/tree/57395181405d5e3e91edfb70c7ffefad4fcfc04f) - This is a container for windows events samples associated to specific attack and post-exploitation techniques
-- [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team) - Atomic Red Team is a library of tests mapped to the MITRE ATT&CK® framework. Security teams can use Atomic Red Team to quickly, portably, and reproducibly test their environments.
-- [MITRE Cyber Analytics Repository](https://car.mitre.org/analytics/by_technique)- The MITRE Cyber Analytics Repository (CAR) is a knowledge base of analytics developed by MITRE based on the MITRE ATT&CK adversary model.
-- [Threat Hunter Playbook](https://threathunterplaybook.com/intro.html) - The Threat Hunter Playbook is a community-driven, open source project to share detection logic, adversary tradecraft and resources to make detection development more efficient. 
-- [Alerta Temprana de Amenazas de Seguridad con Apache Kafka y la Pila ELK](https://uvadoc.uva.es/bitstream/handle/10324/50431/TFG-G5267.pdf?sequence=1)
-
 ## Execution: Rundll32
 Fields of Interest:
 
