@@ -395,7 +395,7 @@ index=botsv2 sourcetype="stream:smtp" attach_filename{}="invoice.zip"
 ```
 
 ## Defense Evasion: Indicator Removal on Host
-Fields of Interest:
+`Fields of Interest:`
 
 - EventCode: `*104*` or `*1102*`
 - RecordNumber
@@ -428,7 +428,7 @@ index=botsv2 wevtutil.exe sourcetype="xmlwineventlog:microsoft-windows-sysmon/op
 
 ## Lateral Movement: WMI at Destination
 
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*1*`
 - Account.Name
@@ -444,7 +444,7 @@ Image="C:\\Windows\\System32\\wbem\\WmiPrvSE.exe" ParentImage="C:\\Windows\\Syst
 
 
 ## Lateral Movement: Remote Execution (Including WMI)
-Fields of Interest:
+`Fields of Interest:`
 
 - sourcetype= `wineventlog` or `sysmon`
 - event.code: `*1*` OR `*4624*`
@@ -473,7 +473,7 @@ Fields of Interest:
 ```
 
 ## Lateral Movement: Inspecting Login Sessions
-Fields of Interest:
+`Fields of Interest:`
 
 - sourcetype= `wineventlog` or `sysmon`
 - event.code: `*1*` OR `*4624*`
@@ -500,7 +500,7 @@ index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" 
 ```
 
 ## Persistence: Short Time Scheduled Tasks (Process)
-Fields of Interest:
+`Fields of Interest:`
 
 Process (Sysmon)
 - event.code: `*1* `
@@ -535,7 +535,7 @@ index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational"
 ```
 
 ## Persistence: Short Time Scheduled Tasks (Registry)
-Fields of Interest:
+`Fields of Interest:`
 
 Registry (Windows Security)
 - event.code: `*4698*` or `*4699*`
@@ -558,7 +558,7 @@ index="botsv2" sourcetype="winregistry" Software\\Microsoft\\Network
 ```
 
 ### Persistence: Create Account
-Fields of Interest:
+`Fields of Interest:`
 
 Process
 - EventCode: `*4720* `
@@ -1045,7 +1045,7 @@ index="botsv2" ftp sourcetype="stream:ftp"   src=* dest=*
 | eval uniq=src." ".dest
 | timechart count by uniq
 ```
-**FTP Activities**
+**FTP ctivities**
 ```
 index="botsv2" ftp sourcetype="stream:ftp"
 | transaction dest_ip
@@ -1201,7 +1201,7 @@ Kibana Query Language. Make sure to enable KQL for every session for better sear
 
 # ELK - Intel-driven Threat Hunting
 ## Execution: Rundll32
-Fields of Interest:
+`Fields of Interest:`
 
 - process.name: `rundll32.exe`
 - process.args:`*pcwutl.dll*` `*LaunchApplication*`
@@ -1211,7 +1211,7 @@ Reference:
 - [win_susp_rundll32_activity.yml](https://gist.github.com/curi0usJack/14d1b2062691c0a50c4dae6f29001107)
 
 ## Execution: URL.dll/IEFrame.dll
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*1*` 
 - winlog.event_data.ParentImage
@@ -1219,7 +1219,7 @@ Fields of Interest:
 - process.args:`(url.dll OR ieframe.dll)` AND `(FileProtocolHandler OR OpenURLA)`
 
 ## Execution: Pcwutl
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*1*` 
 - winlog.event_data.ParentImage
@@ -1230,7 +1230,7 @@ Reference:
 - [LOLBIN - Pcwutl.dll](https://lolbas-project.github.io/lolbas/Libraries/Pcwutl/)
 
 ## Execution: Squiblydoo
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*1*` 
 - winlog.event_data.ParentImage
@@ -1248,7 +1248,7 @@ Fields of Interest:
 - process.args:`*mshtml*` `*RunHTMLApplication*`
 
 ## Execution: Spearphishing Attachment / MalDoc
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*1*` or `*4688*`
 - process.parent.executable : `*winword.exe*`
@@ -1259,7 +1259,7 @@ Fields of Interest:
 - agent.hostname / host.name
 
 ## Persistence: Short Time Scheduled Tasks
-Fields of Interest:
+`Fields of Interest:`
 
 Process (Sysmon)
 - event.code: `*1* `
@@ -1306,7 +1306,7 @@ insecure commonly used paths):
 ```
 
 ## Persistence: DCSync Attack
-Fields of Interest:
+`Fields of Interest:`
 
 An operation was performed on an object (Windows Security)
 - event.code: `*4662*` 
@@ -1359,7 +1359,7 @@ Key Indicators
 - **EventID 59** - A bits job was started
 - **EventID 60** - A Bits job was stopped
 
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*3*` OR `*59*` OR `*60*`
 - channel
@@ -1369,7 +1369,7 @@ Fields of Interest:
 - message
 
 ## Privelege Escalation: UAC Bypass Using SDCLT.EXE
-Fields of Interest:
+`Fields of Interest:`
 
 Registry (Sysmon)
 - event.code: `*13*` 
@@ -1390,7 +1390,7 @@ Reference:
 
 
 ## Privilege Escalation: UAC Bypass Using cliconfg (DLL - NTWDBLIB.dll)
-Fields of Interest:
+`Fields of Interest:`
 
 FileCreate or ModuleLoad(Sysmon)
 - event.code: `*11*` OR `*7*` 
@@ -1407,7 +1407,7 @@ Reference:
 ## Privilege Escalation: UAC Bypass using CompMgmtLauncher
 Identifies use of CompMgmtLauncher.exe to bypass User Account Control. Adversaries use this technique to execute privileged processes.
 
-Fields of Interest:
+`Fields of Interest:`
 
 Registry (Sysmon)
 - event.code: `*13*` 
@@ -1429,7 +1429,7 @@ Reference:
 
 
 ## Defense Evasion: Indicator Removal on Host
-Fields of Interest:
+``Fields of Interest:``
 
 - event.code: `*104*` or `*1102*`
 - Time
@@ -1440,7 +1440,7 @@ Fields of Interest:
 
 
 ## Defense Evasion: RDP Settings Tampering
-Fields of Interest:
+``Fields of Interest:``
 
 - event.code: `*1*`
 - file.path: `*netsh*`
@@ -1480,7 +1480,7 @@ Begin by filtering on the indicators below:
 - **Event ID 10 **- A process was accessed
 - **lsass.exe**
 
-Fields of Interest:
+``Fields of Interest:``
 
 - event.code: `*1*`
 - target.image: `*lsass.exe*`
@@ -1510,7 +1510,7 @@ An **access mask** is a 32-bit value whose bits correspond to the access rights 
 | ts::multirdp                                                                    | 0x1438                 | kull_m_patch_genericProcessOrServiceFromBuild() via kuhl_m_ts_multirdp()     | TermService                               | PROCESS_VM_READ \| PROCESS_VM_WRITE \| PROCESS_VM_OPERATION \| PROCESS_QUERY_INFORMATION                          |                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ## Credential Access: Credential Dumping
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*1*` or `*4688*`
 - Time 
@@ -1522,7 +1522,7 @@ Fields of Interest:
 - winlog.user.name
 
 ## Credential Access: Credential Dumping thru Fileless Attack
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*1*` or `*4688*`
 - Time 
@@ -1549,7 +1549,7 @@ Common Named Pipes
 - **\lsarpc** - local security authority
 - **\winreg** - Windows registry
 
-Fields of Interest:
+`Fields of Interest:`
 
 Network (Sysmon)
 - event.code: `*3*` 
@@ -1587,7 +1587,7 @@ endpoint for TCP sessions.
 ## Reconnaissance: Domain Admins or Group Enumeration
 Detects activity as "net user administrator /domain" and "net group domain admins /domain"
 
-Fields of Interest:
+`Fields of Interest:`
 
 **Source**: 
 ```
@@ -1637,7 +1637,7 @@ One dependable approach to detection is to filter on the following Windows Event
 
 From here, wildcard search for target names ending in `"stdin"`, `"stdout"`, or `"stderr"`; these strings are consistently appended to PsExec services regardless if they are renamed. Be aware that we use the field name `"share.relative_target_name"` which may be different than what's used in other environments.
 
-Fields of Interest:
+`Fields of Interest:`
 
 **Destination**:
   - Event Code: `5145`
@@ -1666,7 +1666,7 @@ minute of each other.
 
 When `WMI` is used for remote access, Sysmon logs a network connection and instances of child process creations with `wmiprvse.exe` as the parent process. Look for `cmd.exe` and `powershell.exe` child processes then investigate process arguments for potentially malicious commands.
 
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*1*` 
 - process.parent.executable : `*wmiprvse.exe*`
@@ -1678,7 +1678,7 @@ Fields of Interest:
 
 
 ## Lateral Movement: Possible Remote WMI Abuse - Mimikatz (Remote Login)
-Fields of Interest:
+`Fields of Interest:`
 
 A logon was attempted using explicit credentials (Windows Security)
 - event.code: `*4648*`
@@ -1690,7 +1690,7 @@ A logon was attempted using explicit credentials (Windows Security)
 [Tool Analysis Result Sheet](https://jpcertcc.github.io/ToolAnalysisResultSheet/details/RemoteLogin-Mimikatz.htm)
 
 ## Impact: Inhibit System Recovery - Vssadmin 
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*1*` or `*4688*`
 - Time
@@ -1701,7 +1701,7 @@ Fields of Interest:
 - agent.hostname / host.name
 
 ## Credential Attack
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*4625*`
 - Time
@@ -1713,7 +1713,7 @@ Fields of Interest:
 - winlog.logon.failure.sub_status
 
 ## Remote Login Sessions
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*4624* (Logon Successful)`
 - event.code: `*4625* (Failed Logon)`
@@ -1724,7 +1724,7 @@ Fields of Interest:
 - winlog.logon.type
 
 ## Network Monitoring IP
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*3*`
 - Time	
@@ -1736,7 +1736,7 @@ Fields of Interest:
 - destination.domain
 
 ## Network Monitoring Domain
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*3*`
 - Time	
@@ -1751,7 +1751,7 @@ Fields of Interest:
 - destination.port
 
 ## Powershell Generic
-Fields of Interest:
+`Fields of Interest:`
 
 - event.code: `*4104*`
 - Time
