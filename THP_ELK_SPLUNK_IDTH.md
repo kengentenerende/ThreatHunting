@@ -407,10 +407,148 @@ SPL of Interest:
 ```
 index=botsv2 sourcetype=wineventlog EventCode=1102
 ```
+**Wevtutil Execution sort by Record Number**
 ```
 index=botsv2 wevtutil.exe sourcetype=wineventlog
 | table _time EventCode RecordNumber Account_Name New_Process_Name Process_Command_Line
 | sort + RecordNumber
+```
+**Wevtutil Execution without "Process Terminate" Status**
+```
+index=botsv2 wevtutil.exe sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" EventDescription!="Process Terminate"
+| table _time RecordID host user CommandLine ParentCommandLine
+| sort + RecordID
+```
+
+## Lateral Movement: WMI at Destination
+
+Fields of Interest:
+
+- event.code: `*1*`
+- Account.Name
+- user: `NT AUTHORITY\\NETWORK SERVICE`
+- Image: `*C:\\Windows\\System32\\wbem\\WmiPrvSE.exe*`
+- CommandLine: `*C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding*`
+
+```
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" 
+user="NT AUTHORITY\\NETWORK SERVICE" CommandLine="C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding" 
+Image="C:\\Windows\\System32\\wbem\\WmiPrvSE.exe" ParentImage="C:\\Windows\\System32\\svchost.exe" ParentCommandLine="C:\\Windows\\System32\\svchost.exe -k DcomLaunch" EventCode=1
+```
+
+
+## Lateral Movement: Remote Execution (Including WMI)
+Fields of Interest:
+
+- sourcetype= `wineventlog` or `sysmon`
+- event.code: `*1*` OR `*4624*`
+- host
+- dest
+- Security_ID 
+- Logon_ID
+- Parent_Process
+- Image
+- CommandLine
+
+SPL of Interest:
+- eval
+- transaction
+- table
+
+```
+(sourcetype=wineventlog (EventCode=4624 Logon_Type=3)) OR (sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" ParentCommandLine!="*\\svchost.exe" EventCode=1)
+| eval login=mvindex(Logon_ID,1)
+| eval user_id=mvindex(Security_ID,1)
+| eval session = lower(coalesce(login,LogonId))
+| transaction session startswith=(EventCode=4624) mvlist=ParentImage
+| search eventcount>1
+| eval Parent_Process=mvindex(ParentImage,1)
+| table _time dest session host user_id Parent_Process Image CommandLine
+```
+
+## Lateral Movement: Inspecting Login Sessions
+Fields of Interest:
+
+- sourcetype= `wineventlog` or `sysmon`
+- event.code: `*1*` OR `*4624*`
+- TaskCategory 
+- Account_Name
+- Security_ID
+- ParentCommandLine
+- CommandLine
+
+SPL of Interest:
+- eval
+- table
+
+```
+index="botsv2" ((Logon_ID=0x171491a OR LogonId=0x171491a) host=*TARGET_HOST*)
+| eval shortCL=substr(CommandLine,1,100) 
+| eval shortPCL=substr(ParentCommandLine,1,100)
+| table _time EventCode TaskCategory Account_Name Security_ID Process_Command_Line shortCL shortPCL
+```
+```
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational"  ParentCommandLine="C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding"
+| eval shortCL=substr(CommandLine,1,100)
+| table _time user host ProcessId ParentProcessId shortCL ParentCommandLine
+```
+
+## Persistence: Short Time Scheduled Tasks (Process)
+Fields of Interest:
+
+Process (Sysmon)
+- event.code: `*1* `
+- ParentImage
+- ParentCommandLine: `*powershell*`
+- Image: `*schtasks.exe*`
+- CommandLine: `*schtasks*`
+
+File Create (Sysmon)
+- event.code: `*11*`
+- file.path: `C:\Windows\System32\Tasks\{NameOfTask}`
+
+```
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" 
+CommandLine="*schtasks.exe*"
+| stats count by CommandLine ParentCommandLine
+```
+**Sort by Host**
+```
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational"
+ CommandLine="*schtasks.exe*" ParentCommandLine="*powershell*"
+| transaction host
+| table _time host CommandLine ParentCommandLine
+```
+**Sort by TaskName**
+```
+index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational"
+ CommandLine="*schtasks.exe*" 
+| rex field=CommandLine "(?i)tn\s+(?<taskname>.*)\s"
+| transaction taskname
+| table _time, taskname, host, CommandLine, ParentCommandLine
+```
+
+## Persistence: Short Time Scheduled Tasks (Registry)
+Fields of Interest:
+
+Registry (Windows Security)
+- event.code: `*4698*` or `*4699*`
+- task.name
+- host.name
+- user.name
+- event.action
+- message
+
+Registry (winregistry)
+- sourcetype: `*winregistry*`
+- registry_type
+- key_path
+- data_type
+- data
+- process_image
+
+```
+index="botsv2" sourcetype="winregistry" Software\\Microsoft\\Network
 ```
 
 ## Command and Control: Outbound Connection with Suspicious File Retrieval
@@ -441,8 +579,6 @@ or
 index=* sourcetype=stream:http c_ip="192.168.250.100"
 | stats count by url
 ```
-
-
 
 ## Command and Control: Outbound Connection with Suspicious File Download
 Field of Interest:
@@ -646,6 +782,12 @@ or
 | table dest_ip, ssl_subject_common_name, tls.fingerprint, count
 
 Note: you may remove ssl subject common name on initial query.
+```
+```
+index="botsv2" "C=US" sourcetype=suricata 
+| transaction ssl_subject_common_name, dest_ip
+| dedup ssl_subject_common_name, dest_ip 
+| table ssl_subject_common_name, dest_ip, src_ip, _time
 ```
 
 ```
