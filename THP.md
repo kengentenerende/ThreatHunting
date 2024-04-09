@@ -579,18 +579,41 @@ uri_path=
 - `/activity`
 - `/IE9CompatViewList.xml`
 
-**Beacon URI Path**
+**Beaconing Detection**
 ```
 index="cobaltstrike_beacon" sourcetype="bro:http:json" 192.168.151.181
 | transaction user_agent
 | table uri_path, user_agent, src_ip, dest_ip
 ```
-**Beacon URI Path**
+**Beacon - URI Path**
 ```
 index=* (uri_path=*/ca* OR */dpixel* OR */__utm.gif* OR */pixel.gif* OR */g.pixel* OR */dot.gif* OR */updates.rss* OR */fwlink* OR */cm* OR */cx* OR */pixel* OR */match* OR */visit.js* OR */load* OR */push* OR */ptj* OR */j.ad* OR */ga.js* OR */en_US/all.js* OR */activity* OR */IE9CompatViewList.xml* OR */submit.php*)
 | dedup uri_path
 | transaction dest_ip
 | table dest_ip, src_ip, uri_path, user_agent
+```
+**Beaconing - Time Interval**
+```
+index="cobaltstrike_beacon" sourcetype="bro:http:json" dest=192.168.151.181 src=10.0.10.20
+| timechart count
+OR
+index="cobaltstrike_beacon" sourcetype="bro:http:json" dest=192.168.151.181 src=10.0.10.20
+| sort 0 _time
+| streamstats current=f last(_time) as prevtime by src, dest, dest_port
+| eval timedelta = _time - prevtime
+| convert ctime(prevtime)
+| stats count by _time, prevtime, timedelta
+```
+**Beaconing - Response Byte**
+```
+index="cobaltstrike_beacon" sourcetype="bro:conn:json" dest=192.168.151.181 src=10.0.10.100
+| stats count by _time, resp_bytes
+| fields - count
+OR
+index="cobaltstrike_beacon" sourcetype="bro:conn:json" dest=192.168.151.181 src=10.0.10.100
+| stats count by _time, resp_bytes, src_ip, dest_ip
+| transaction resp_bytes
+| fields - count
 ```
 
 Reference:
