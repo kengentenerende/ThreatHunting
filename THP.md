@@ -272,7 +272,6 @@ Here's the breakdown of your command:
 | `grep -rin Testvalue1 * \|   column -t \| less -S`    | Search the "Testvalue1" string everywhere, organise column spaces and view the output with less.    |   |   |   |
 | `wc -l`    | Used to count the number of lines in a file    |   |   |   |
 
-
 **TShark**
 > tshark -r sample.pcap -T fields -e ip.src -e ip.dst -e udp.dstport -e frame.time_delta_displayed 'ip.src==192.168.88.2 && ip.dst==165.227.88.15' | head -25
 
@@ -510,3 +509,89 @@ Order by [Total Hits] Desc
 >Scan remote endpoints for IOCS
 
 [NOAH](https://github.com/giMini/NOAH)
+
+# Intel-driven Threat Hunting
+- [Hunting for APT in network logs (PPT)](https://www.slideshare.net/OlehLevytskyi1/hunting-for-apt-in-network-logs-workshop-presentation)
+- [Hunting for APT in network logs - Oleh Levytskyi, Bogdan Vennyk](https://www.youtube.com/watch?v=PmwFpwTCy88&t=5979s)
+
+## Initial Access: RDP Bruteforce
+`Field of Interest:`
+- sourcetype=`bro:rdp:json`
+- cookie
+- id.orig_h
+- id.orig_p=`Incrementing Port`
+- id.resp_h
+- id.resp_p=`3389`
+
+```
+index="rdp_bruteforce" sourcetype="bro:rdp:json" id.resp_p=3389
+| transaction cookie
+| eval total_srcp=mvcount(src_port)
+| table cookie, id.orig_h, total_srcp, id.resp_h, id.resp_p
+```
+
+## Initial Access: SSH Bruteforce
+`Field of Interest:`
+- sourcetype=`bro:ssh:json`
+- id.orig_h
+- id.orig_p=`Incrementing Port`
+- id.resp_h
+- id.resp_p=`3389`
+- server
+- client
+
+```
+index="ssh_bruteforce" sourcetype="bro:ssh:json" id.resp_p=22
+| transaction id.orig_h
+| eval total_srcp=mvcount(src_port)
+| table id.orig_h, total_srcp, id.resp_h, id.resp_p, server, client
+```
+
+## Initial Access: Beaconing
+`Field of Interest:`
+- sourcetype=`bro:http:json`
+- id.orig_h
+- id.orig_p
+- id.resp_h
+- id.resp_p
+- user_agent
+
+uri_path=
+- `/ca`
+- `/dpixel`
+- `/__utm.gif`
+- `/pixel.gif`
+- `/g.pixel`
+- `/dot.gif`
+- `/updates.rss`
+- `/fwlink`
+- `/cm`
+- `/cx`
+- `/pixel`
+- `/match`
+- `/visit.js`
+- `/load	  `
+- `/push`
+- `/ptj`
+- `/j.ad`
+- `/ga.js`
+- `/en_US/all.js`
+- `/activity`
+- `/IE9CompatViewList.xml`
+
+**Beacon URI Path**
+```
+index="cobaltstrike_beacon" sourcetype="bro:http:json" 192.168.151.181
+| transaction user_agent
+| table uri_path, user_agent, src_ip, dest_ip
+```
+**Beacon URI Path**
+```
+index=* (uri_path=*/ca* OR */dpixel* OR */__utm.gif* OR */pixel.gif* OR */g.pixel* OR */dot.gif* OR */updates.rss* OR */fwlink* OR */cm* OR */cx* OR */pixel* OR */match* OR */visit.js* OR */load* OR */push* OR */ptj* OR */j.ad* OR */ga.js* OR */en_US/all.js* OR */activity* OR */IE9CompatViewList.xml* OR */submit.php*)
+| dedup uri_path
+| transaction dest_ip
+| table dest_ip, src_ip, uri_path, user_agent
+```
+
+Reference:
+- [Cobalt Strike Analysis and Tutorial: How Malleable C2 Profiles Make Cobalt Strike Difficult to Detect](https://unit42.paloaltonetworks.com/cobalt-strike-malleable-c2-profile/)
