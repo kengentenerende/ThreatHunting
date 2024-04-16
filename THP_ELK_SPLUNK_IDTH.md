@@ -499,6 +499,180 @@ index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational" 
 | table _time user host ProcessId ParentProcessId shortCL ParentCommandLine
 ```
 
+## BruteForce: Logon attempts using a non-existing account (Kerberos)
+
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4768*`
+- Status=`0x6` - This value means that the submitted username does not exist.
+- TargetUserName 
+- IpAddress
+- Computer
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `IpAddress maxpause=5m maxevents=-1`
+- sort
+
+```
+index=ad_hunting EventCode=4768 Status=0x6
+| transaction IpAddress 
+| table IpAddress TargetUserName ServiceName Computer eventcount
+```
+```
+index="ad_hunting" sourcetype=XmlWinEventLog EventCode=4768 Status=0x6 
+| transaction IpAddress maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 2
+| table _time, host, Source, TargetUserName, accounts, eventcount 
+| sort - _time  
+| convert ctime(Time)
+```
+
+## BruteForce: Logon attempts using a non-existing account (NTLM)
+
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4776*`
+- Status=`0xc0000064` - This value means that the submitted username does not exist.
+- TargetUserName 
+- Workstation
+- eventcount
+- host
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `Workstation maxpause=5m maxevents=-1` 
+- sort
+
+```
+index=ad_hunting EventCode=4776 Status=0xc0000064
+| transaction TargetUserName
+| where eventcount < 10
+| table _time, host, Computer, TargetUserName, eventcount 
+| sort - eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4776 Status=0xC0000064 
+| transaction Workstation maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 2 
+| table _time, host, Workstation, TargetUserName, accounts, eventcount 
+| sort - _time 
+| convert ctime(Time)
+```
+
+## BruteForce: Excessive failed password attempts from one source (Kerberos)
+
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4771*`
+- Status=`0x18` - Invalid pre-authentication information, usually a wrong password.
+- TargetUserName 
+- Computer
+- eventcount
+- host
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `IpAddress maxpause=5m maxevents=-1` 
+- sort
+
+```
+index=* EventCode=4771 Status=0x18
+| transaction IpAddress 
+| table IpAddress TargetUserName, Computer, eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4771 Status=0x18 
+| transaction IpAddress maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
+| eval accounts=mvcount(TargetUserName) 
+| table _time, host, Source, TargetUserName, accounts, eventcount 
+| sort - _time 
+| convert ctime(Time)
+```
+
+## BruteForce: Excessive failed password attempts from one source (NTLM)
+
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4776*`
+- Status=`0xC000006A` - A logon with misspelled or wrong password.
+- TargetUserName 
+- Workstation
+- eventcount
+- host
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `Workstation maxpause=5m maxevents=-1` 
+- sort
+
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4776 Status=0xC000006A
+| transaction Workstation
+| table Workstation TargetUserName eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4776 Status=0xC000006A
+| transaction Workstation maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 2 
+| table _time, host, Workstation, TargetUserName, accounts, eventcount 
+| sort - _time 
+| convert ctime(Time)
+```
+
+## BruteForce: Excessive failed password attempts towards one account
+`Fields of Interest:`
+
+- `((EventCode=4776 Status=0xC000006A) OR (EventCode=4771 Status=0x18))`
+- Status=`0xC000006A` - A logon with misspelled or wrong password.
+- TargetUserName 
+- Status
+- src
+- host
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `TargetUserName maxpause=5m maxevents=-1` 
+- sort
+
+```
+index="ad_hunting" source=XmlWinEventLog:Security ((EventCode=4776 Status=0xC000006A) OR (EventCode=4771 Status=0x18)) 
+| transaction TargetUserName maxpause=5m maxevents=-1 
+| eval sources=mvcount(src) 
+| where sources > 1
+| table _time host TargetUserName Status src sources eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security ((EventCode=4776 Status=0xC000006A) OR (EventCode=4771 Status=0x18)) 
+| eval src=if(src=="::1", Computer, src) 
+| transaction TargetUserName maxpause=5m maxevents=-1 
+| eval sources=mvcount(src) 
+| where eventcount > 5 AND sources > 1 
+| table _time, host, TargetUserName, sources, src, eventcount 
+| sort - _time
+| convert ctime(Time)
+```
+
 ## Persistence: Short Time Scheduled Tasks (Process)
 `Fields of Interest:`
 
