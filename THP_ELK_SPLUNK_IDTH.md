@@ -673,6 +673,73 @@ index="ad_hunting" source=XmlWinEventLog:Security ((EventCode=4776 Status=0xC000
 | convert ctime(Time)
 ```
 
+## BruteForce: Multiple locked accounts from one source
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4740*`
+- TargetUserName 
+- src
+- host
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `TargetDomainName maxpause=1h maxevents=-1` 
+- sort
+
+```
+source=XmlWinEventLog:Security EventCode =4740
+| transaction TargetDomainName
+| eval accounts = mvcount (TargetUserName)
+| where accounts > 1
+| table TargetDomainName, TargetUserName, Computer, eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4740 
+| transaction TargetDomainName maxpause=1h maxevents=-1 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 1 
+| table _time, host, TargetDomainName, TargetUserName, accounts 
+| sort - _time 
+| convert ctime(Time)
+```
+## BruteForce: Logon attempts towards disabled accounts (Kerberos)
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4768*`
+- Status=`0x12` - Account is disabled.
+- TargetUserName 
+- TargetDomainName
+- src
+- host
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `TargetDomainName maxpause=1h maxevents=-1` 
+- sort
+
+```
+source=XmlWinEventLog:Security EventCode=4768 Status=0x12
+| transaction TargetUserName 
+| table TargetUserName TargetDomainName src host eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4768 Status=0x12 
+| transaction IpAddress maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 2 
+| table _time, host, Source, TargetUserName, accounts, eventcount 
+| sort - _time 
+| convert ctime(Time)
+```
+
 ## Persistence: Short Time Scheduled Tasks (Process)
 `Fields of Interest:`
 
