@@ -693,7 +693,7 @@ sourcetype="bro:dce_rpc:json" operation=NetrShareEnum endpoint=srvsvc
 ```
 `operation=NetrShareEnum`: This filter narrows down the events to those where the operation field equals `NetrShareEnum`. The `NetrShareEnum` operation is part of the Server Service (often referred to as srvsvc), which can be used to retrieve a list of shared resources on a system. Monitoring this operation is crucial because attackers could use it to gain information about network shares as a part of reconnaissance activities.
 
-## Credential Access: Golden Ticket Attack
+## Credential Access: Kerberos Bruteforce Detection
 `Field of Interest:`
 - sourcetype=`bro:kerberos:json` or `kerberos.log`
 - client
@@ -703,17 +703,14 @@ sourcetype="bro:dce_rpc:json" operation=NetrShareEnum endpoint=srvsvc
 - request_type=`AS`
 - _time
 
-
-
 **Kerberos Bruteforce Detection**
 ```
-sourcetype="bro:kerberos:json" 
+sourcetype="bro:kerberos:json"
 success="false" request_type=AS
-| transaction error_msg client 
-| dedup id.orig_h id.resp_h
-| table error_msg client id.orig_h id.resp_h _time
+| stats count as attempts, dc(client) as total_clients, values(error_msg) as error_messages by id.orig_h, id.resp_h
+| table id.orig_h, id.resp_h, attempts, total_clients, error_messages
+| where attempts>30
 ```
-
 ```
 sourcetype="bro:kerberos:json" 
 error_msg!=KDC_ERR_PREAUTH_REQUIRED
@@ -735,4 +732,287 @@ No. Abbreviation Function
 - 30 KRB-ERROR error
 
 [MIT Kerberos Documentation - Encryption types](https://web.mit.edu/kerberos/krb5-latest/doc/admin/enctypes.html#:~:text=Kerberos%20can%20use%20a%20variety,confidentiality%20and%20integrity%20to%20data.)
+
+
+## Credential Access: Kerberoasting Detection
+`Field of Interest:`
+- sourcetype=`bro:kerberos:json` or `kerberos.log`
+- client
+- service
+- id.orig_h
+- id.resp_h
+- request_type=`TGS`
+- cipher=`"rc4-hmac"`
+- forwardable=`"true"`
+- renewable=`"true"`
+- _time
+
+```
+sourcetype="bro:kerberos:json" request_type=TGS cipher="rc4-hmac" forwardable="true" renewable="true"
+| table _time, id.orig_h, id.resp_h, request_type, cipher, forwardable, renewable, client, service
+```
+This query is valuable for security monitoring and auditing within environments that use Kerberos for authentication. 
+- `cipher="rc4-hmac"`: This is significant because while RC4-HMAC was once common, it is now considered less secure than newer encryption types like AES. Monitoring its usage can help identify older or potentially insecure configurations.
+- `forwardable="true"`: Forwardable tickets allow the client (or an intermediary on behalf of the client) to request additional TGS tickets to different services on behalf of the user, increasing flexibility but also potentially increasing security risk if misused.
+- `renewable="true"`: Renewable tickets can be renewed without the client needing to re-authenticate using their password, which is useful for long-running jobs or services.
+
+
+## Credential Access: Kerberoasting Detection
+`Field of Interest:`
+- sourcetype=`bro:kerberos:json` or `kerberos.log`
+- client
+- id.orig_h
+- id.resp_h
+- request_type=`TGS`
+- _time
+
+```
+sourcetype="bro:kerberos:json"
+| where client!="_"
+| bin _time span=1m
+| stats values(client), values(request_type) as request_types, dc(request_type) as unique_request_types by _time, id.orig_h, id.resp_h
+| where request_types=="TGS" AND unique_request_types==1
+```
+Potential Golden Ticket attacks by focusing on unusual TGS request patterns within Kerberos logs
+[detect_kerberos_attacks.sh](https://github.com/exp0se/detect_kerberos_attacks/blob/master/detect_kerberos_attacks.sh)
+
+## Credential Access: DCSync Attack Detection
+`Field of Interest:`
+- sourcetype=`bro:dce_rpc:json` or `dce_rpc.log`
+- endpoint
+- operation
+- id.orig_h
+- id.resp_h
+- operation=`DRSGetNCChanges`
+- _time
+
+```
+sourcetype="bro:dce_rpc:json" operation=DRSGetNCChanges
+| transaction endpoint
+| table _time, id.orig_h, id.resp_h, endpoint, operation
+```
+Extract and analyze logs related to a specific DCE/RPC operation, specifically `DRSGetNCChanges`, which is crucial in Active Directory environments for replication of directory changes.
+
+`operation=DRSGetNCChanges`: This filter restricts the logs to those where the operation field is set to `DRSGetNCChanges`. This operation is significant in the context of Windows Server Active Directory as it is used by domain controllers to replicate directory objects and changes. In security monitoring, watching this operation is critical because unauthorized or malicious replication requests can indicate attempts at creating backdoors or extracting sensitive directory information.
+
+## Lateral Movement
+Lateral movement attacks
+Exploitation of Remote Services
+- Zerologon
+- Print Nightmare
+
+Remote Services
+- RDP
+- SMB
+- DCOM
+- SSH
+- VNC
+- WinRM
+
+Use Alternate Authentication Material
+- Pass-the-hash
+- Pass-the-ticket
+
+## Lateral Movement: PSExec CobaltStrike Execution Detection
+`Field of Interest:`
+- sourcetype=`bro:smb_files:json` or `smb_files.log`
+- name=`"*.exe"`, `"*.dll"`, `"*.bat"`
+- path=`"*\\c$"`, `"*\\ADMIN$"`
+- id.orig_h
+- id.resp_h
+- _time
+
+
+```
+index="cobalt_strike_psexec"
+sourcetype="bro:smb_files:json"
+action="SMB::FILE_OPEN"
+name IN ("*.exe", "*.dll", "*.bat")
+path IN ("*\\c$", "*\\ADMIN$")
+size>0
+```
+```
+sourcetype="bro:smb_files:json"
+action="SMB::FILE_OPEN"
+name IN ("*.exe", "*.dll", "*.bat")
+path IN ("*\\c$", "*\\ADMIN$")
+size>0
+| transaction name
+| table name, path, action id.orig_h,  id.resp_h, id.resp_p
+```
+Check for SMB (Server Message Block) file access events, specifically focusing on potentially sensitive or executable file types within high-risk administrative shares
+
+## Lateral Movement: Fileless PSExec Execution (SharpNoPSExec) using Service Creation
+`Field of Interest:`
+- sourcetype=`bro:dce_rpc:json` or `dce_rpc.log`
+- operation=`"CreateServiceW"`, `"CreateServiceA"`, `"StartServicew"`, `"StartServiceA"`,
+`"ChangeServiceConfigW"`
+- endpoint
+- operation
+- id.orig_h
+- id.resp_h
+- _time
+
+```
+sourcetype="bro:dce_rpc:json"
+operation IN ("CreateServiceW", "CreateServiceA", "StartServicew", "StartServiceA",
+"ChangeServiceConfigW")
+| transaction endpoint
+| table _time, id.orig_h, id.resp_h, endpoint, operation
+```
+```
+index="change_service_config" endpoint=svcctl sourcetype="bro:dce_rpc:json"
+operation IN ("CreateServiceW", "CreateServiceA", "StartServicew", "StartServiceA",
+"ChangeServiceConfigW")
+| transaction endpoint
+| table _time, id.orig_h, id.resp_h, endpoint, operation
+```
+Analyze and monitor specific DCE/RPC activities related to service control operations in Windows environments
+- Unauthorized or malicious service creation or modification, which could be part of an attacker's efforts to establish persistence or escalate privileges on a system.
+- Start of services that may be unusual or unauthorized, potentially indicating that an attacker is activating malicious services designed to perform harmful actions.
+
+[SharpNoPSExec - File less command execution for lateral movement](https://github.com/juliourena/SharpNoPSExec/blob/master/SharpNoPSExec/Program.cs)
+
+## Lateral Movement: Possible ZeroLogon Activity Detection 
+`Field of Interest:`
+- sourcetype=`bro:dce_rpc:json` or `dce_rpc.log`
+- operation=`"NetrServerReqChallenge"` OR `"NetrServerAuthenticate3"` OR `"NetrServerPasswordSet2"`
+- endpoint
+- id.orig_h
+- id.resp_h
+- _time
+
+```
+endpoint="netlogon" sourcetype="bro:dce_rpc:json"
+| bin _time span=1m
+| where operation == "NetrServerReqChallenge" OR operation == "NetrServerAuthenticate3" OR operation == "NetrServerPasswordSet2"
+| transaction endpoint
+| table endpoint, operation _time, id.orig_h, id.resp_h
+```
+```
+index="zerologon" endpoint="netlogon" sourcetype="bro:dce_rpc:json"
+| bin _time span=1m
+| where operation == "NetrServerReqChallenge" OR operation == "NetrServerAuthenticate3" OR operation == "NetrServerPasswordSet2"
+| stats count values(operation) as operation values dc(operation) as unique_operations by _time, id.orig_h, id.resp_h
+| where unique_operations >= 2 AND count>100
+```
+
+Firstly, the vulnerability is exploited by sending specially crafted `NetrServerReqChallenge`, `NetrServerAuthenticate3` and `NetrServerPasswordSet2` DCERPC requests to initially bind to and use the NETLOGON interface. This is followed by sending specific Opnum like 2, 26 and 30 to set the domain controller password to NULL. Filters the events to only include those related to three specific Netlogon operations:
+- `NetrServerReqChallenge`: Part of the authentication sequence where the server challenges the client to prove its identity.
+- `NetrServerAuthenticate3`: Used for establishing a secure channel and authenticating clients and servers in the domain.
+- `NetrServerPasswordSet2`: Used to change the machine account password, which if done maliciously, can disrupt domain communications or facilitate unauthorized access.
+
+[Network Threat Hunting for Zerologon Exploits (CVE-2020-1472)](https://arista.my.site.com/AristaCommunity/s/article/Network-Threat-Hunting-for-Zerologon-Exploits-CVE-2020-1472)
+
+## Lateral Movement: Print Spooler Activity Detection 
+`Field of Interest:`
+- sourcetype=`bro:dce_rpc:json` or `dce_rpc.log`
+- operation=`RpcAddPrinterDriverEx`
+- endpoint
+- id.orig_h
+- id.resp_h
+- _time
+
+```
+sourcetype="bro:dce_rpc:json" operation=RpcAddPrinterDriverEx OR operation=RpcEnumPrinterDrivers
+| transaction endpoint
+| table _time, id.orig_h, id.resp_h, endpoint, operation
+```
+```
+index="printnightmare" endpoint=spoolss operation=RpcAddPrinterDriverEx OR operation=RpcEnumPrinterDrivers
+| table _time, id.orig_h, id.resp_h, endpoint, operation
+```
+
+Heuristics are simple check for PrintNightmare:
+- \pipe\spoolss in named_pipe
+- spoolss in endpoint
+- RpcEnumPrinterDrivers OR RpcAddPrinterDriverEx in operation
+
+Reference:
+- [Simple policy to detect CVE-2021-1675](https://github.com/initconf/cve-2021-1675-printnightmare)
+- [PrintNightmare (CVE-2021-1675)](https://community.netwitness.com/t5/netwitness-community-blog/printnightmare-cve-2021-1675/ba-p/625335)
+
+
+## Lateral Movement: DCOM Execution Detection 
+`Field of Interest:`
+- sourcetype=`bro:dce_rpc:json` or `dce_rpc.log`
+- operation=`RpcAddPrinterDriverEx`
+- endpoint
+- id.orig_h
+- id.resp_h
+- _time
+
+
+```
+sourcetype="bro:dce_rpc:json" endpoint=IDispatch 
+| table _time, id.orig_h, id.resp_h, endpoint, operation
+```
+```
+sourcetype="*bro:dce_rpc:json*" endpoint=IDispatch
+| transaction id.orig_h
+| table operation, id.orig_h, id.resp_h, endpoint, _time
+```
+
+- `endpoint=IDispatch`: This filter targets log entries where the endpoint involved is IDispatch. IDispatch is a part of the Component Object Model (COM) in Microsoft Windows, which enables an application to call functions of objects implemented in other applications or (often) remote processes. The use of `IDispatch` can be particularly interesting from a security perspective because it could be used in methods involving automation, remote procedure calls, or interacting with processes across different security contexts.
+
+[LATERAL MOVEMENT VIA DCOM: ROUND 2](https://enigma0x3.net/2017/01/23/lateral-movement-via-dcom-round-2/)
+
+## Exfiltration: CobaltStrike Data Exfiltration
+`Field of Interest:`
+- sourcetype=`bro:dce_rpc:json` or `dce_rpc.log`
+- operation=`RpcAddPrinterDriverEx`
+- endpoint
+- id.orig_h
+- id.resp_h
+- _time
+
+
+Cobalt Strike data exfiltration detection steps
+1. Filter out check-in beacon data
+2. In case of HTTP beacons, they are using GET requests, so we can just look for POST requests
+payload data (packet content without HTTP header).
+3. In case of HTTPS beaconing you need to find this value statistically and filter it out manually.
+
+**CobaltStrike data exfiltration using HTTP Beacon**
+```
+sourcetype="bro:http:json" method=POST dest_ip=192.168.151.181
+| stats sum(request_body_len) as TB by src, dest, dest_port
+| eval TB = TB/1024/1024
+```
+Converts the total bytes into megabytes for easier interpretation
+
+**CobaltStrike HTTPS - Find Beacon**
+```
+index="cobaltstrike_exfiltration_https"sourcetype="bro:conn:json"
+| eventstats count as total by src, dest, dest_port
+| stats count by src, dest, dest_port, total, resp_bytes
+| eval percent = (count/total)*100
+| where percent > 70 AND total > 50
+| table percent, total, src, dest, dest_port, dest_port, resp_bytesB by src, dest, dest_port
+```
+OR
+```
+index="cobaltstrike_exfiltration_https" sourcetype="bro:conn:json"
+| eventstats count as total by src, dest, dest_port
+| stats count by src, dest, dest_port, total, resp_bytes
+| eval percent = (count/total)*100
+| where percent > 70 AND total > 50
+| table percent, total, src, dest, dest_port, dest_port, resp_bytes
+```
+**CobaltStrike HTTPS - Filter-out Beacon**
+```
+index="cobaltstrike_exfiltration_https" sourcetype="bro:conn:json" resp_bytes!=316 dest=192.168.151.181 dest_port=443
+| stats sum(orig_bytes) as TB by src, dest, dest_port
+| eval TB = TB/1024/1024
+```
+
+## Exfiltration: CobaltStrike Data Exfiltration - Data Transfer Size Limit
+```
+index="exfiltration_data_size_limits" sourcetype="bro:conn:json"
+| bin span=1m time
+| rename id.origin_host as src_ip, id.resp_host as dest_ip, id.resp_p as dest_port, orig_ip_bytes as bytes_out
+| stats count by _time, bytes_out
+```
+
+
 
