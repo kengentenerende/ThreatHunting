@@ -1014,5 +1014,123 @@ index="exfiltration_data_size_limits" sourcetype="bro:conn:json"
 | stats count by _time, bytes_out
 ```
 
+## Exfiltration: DNS Exfiltration
+`Field of Interest:`
+- sourcetype=`bro:dns:json` or `dns.log`
+- query
+- id.orig_h
+- id.resp_h
+- _time
+
+**Timechart DNS**
+```
+sourcetype="bro:dns:json" blue.letsgohunt.online
+| timechart span=1s count by dest_ip
+```
+**Average Length of the Subdomain**
+```
+sourcetype="bro:dns:json" "blue.letsgohunt.online"
+| eval query=mvdedup(query)
+| rex field=query "(?<ut_identifier>(?:\w+\.)+)(?<ut_subdomain>[^\.]+[^\.]+)\.(?<ut_domain>[^\.]+\.[^\.]+)$"
+| eval sublen = len(ut_identifier)
+| table ut_identifier ut_subdomain ut_domain sublen
+```
+**Unusual Long Subdomain**
+```
+sourcetype="bro:dns:json"
+| eval len_query=len(query)
+| search len_query>=40 AND query!="*.ip6.arpa*" AND query!="* amazonaws.com *" AND query!="*._google cast.*" AND query!="_ldap.*"
+| stats count(query) as req_by_day by id.orig_h, id.resp_h
+| sort - req_by_day
+```
+```
+sourcetype="bro:dns:json"
+| eval len_query=len(query)
+| search len_query>=40 AND query!="*.ip6.arpa*" AND query!="* amazonaws.com *" AND query!="*._google cast.*" AND query!="_ldap.*"
+| bin _time span=24h
+| stats count(query) as req_by_day by _time, id.orig_h, id.resp_h
+| where req_by_day>60
+| table _time, id.orig_h, id.resp_h, req_by_day
+```
+
+## Impact: Encryption - **Ransomware behavior 1**
+- Start
+- Enumerate files
+- Read file(read file content) - `SMB:: FILE_OPEN`
+- Encrypt file (encryption in memory)
+- Write file (Write encrypted data to a file) - `SMB: FILE_RENAME`
+- The same file
+
+```
+sourcetype="bro:smb_files:json"
+| where action IN ("SMB::FILE_OPEN", "SMB::FILE_RENAME")
+| bin _time span=5m
+| stats count by _time, source, action
+| where count>30
+| stats sum(count) as count values(action) dc(action) as uniq_actions by _time, source
+| where uniq_actions==2 AND count>100
+```
 
 
+## Impact: Encryption - **Ransomware behavior 2**
+- Start
+- Enumerate files
+- Read file (read file content)
+- Delete original file
+- Encrypt file (encryption in memory)
+- Write new file (Write encrypted data to a file)
+
+```
+sourcetype="bro:smb_files:json"
+| where action IN ("SMB::FILE_OPEN", "SMB::FILE_DELETE")
+| bin _time span=5m
+| stats count by _time, source, action
+| where count>30
+| stats sum(count) as count values(action) dc(action) as uniq_actions by _time, source
+| where uniq_actions==2 AND count>100
+```
+```
+sourcetype="bro:smb_files:json"
+| where action IN ("SMB::FILE_OPEN", "SMB::FILE_DELETE")
+| bin _time span=5m
+```
+
+## Impact: Encryption - **Ransomware behavior 3**
+
+Ransomware behavior 3
+- Start
+- Enumerate files
+- Read file (read file content) `SMB::FILE_OPEN`
+- Encrypt file (encryption in memory)
+- Write file with specific extension (Write encrypted data) `SMB::FILE_RENAME`
+
+```
+sourcetype="bro:smb_files:json" action="SMB::FILE_RENAME"
+| bin _time span=5m
+| rex field="name" "\.(?<new_file_name_extension>[^\.]*$)"
+| rex field="prev_name" "\.(?<old_file_name_extension>[^\.]*$)"
+| stats count by _time, id.orig_h, id.resp_p, name, source, old_file_name_extension, new_file_name_extension
+| where new_file_name_extension!=old_file_name_extension
+| stats count by _time, id.orig_h, id.resp_p, source, new_file_name_extension
+| where count>20
+| sort - count
+```
+**Check for Unique FileExtension**
+```
+sourcetype="bro:smb_files:json"
+| where action IN ("SMB::FILE_RENAME")
+| eval base_length = len(prev_name)
+| eval new_extension = substr(name, base_length + 1)
+| where isnotnull(new_extension) AND new_extension != ""
+| stats count by new_extension, src_ip, dest_ip
+| sort - count
+| table new_extension, count, src_ip, dest_ip
+```
+```
+sourcetype="bro:smb_files:json"
+| where action IN ("SMB::FILE_OPEN", "SMB::FILE_RENAME")
+| rex field=name "^(?<base_file>.*?)(?:\.(?<extension>[^\.]+))?$"
+| stats values(base_file) as filenames by extension, src_ip, dest_ip
+| sort - count(filenames)
+| table extension, filenames, src_ip, dest_ip
+```
