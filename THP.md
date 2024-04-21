@@ -498,8 +498,6 @@ Order by [Total Hits] Desc
 
 **Detection Tools**
 
-
-
 ## Powershell Tools
 [Kansa](https://github.com/davehull/Kansa)
 >Incident response, breach hunts, building baselines
@@ -618,3 +616,123 @@ index="cobaltstrike_beacon" sourcetype="bro:conn:json" dest=192.168.151.181 src=
 
 Reference:
 - [Cobalt Strike Analysis and Tutorial: How Malleable C2 Profiles Make Cobalt Strike Difficult to Detect](https://unit42.paloaltonetworks.com/cobalt-strike-malleable-c2-profile/)
+
+## Reconnaissance: Network Scanning
+`Field of Interest:`
+- source=`*conn.log`
+- dest_port
+- dest_ip
+- src_ip
+- _time
+
+**General Checking of Destiantion Port**
+```
+source=*conn.log
+| transaction dest_port, dest_ip
+| dedup dest_port, dest_ip
+| table dest_port, dest_ip, src_ip, _time
+```
+**Basic Scanning**
+```
+source=*conn.log
+| bin span=5m _time
+| transaction dest_ip, src_ip
+| eval total_dsrprt=mvcount(dest_port)
+| where total_dsrprt >= 1000
+| table total_dsrprt, dest_ip, src_ip
+```
+```
+source=*conn.log
+| bin span=5m _time
+| stats dc(dest_port) as num_dest_port, values(dest_ip) as dest_ip by _time, src_ip
+| where num_dest_port >= 1000
+```
+NMAP scan was successfully detected, but there are couple things which should be taken into
+consideration:
+- Threshold for unique destination ports is more or equal than 1000. From our observations, when
+adversaries get initial access, they hunt for specific ports like SMB or RDP, up to 10 ports at a time.
+- Other IPs were marked as scanned, beside the one scanned by NMAP.
+
+**Successful Scanning of OpenPort**
+```
+source=*conn.log
+| bin span=5m _time
+| transaction dest_ip, src_ip
+| eval total_dsrprt=mvcount(dest_port)
+| where total_dsrprt >= 1000
+| table total_dsrprt, dest_ip, src_ip
+```
+```
+source=*conn.log orig_bytes=0 dest_ip IN (192.168.0.0/16, 172.16.0.0./12, 10.0.0.0/8)
+| bin span=5m _time
+| stats dc(dest_port) as num_dest_port by _time, src_ip, dest_ip
+| where num_dest_port >= 1000
+```
+
+During port scanning NMAP is trying to establish TCP handshake on each port and if it is successful it means the port is open. Also remote service can return its banner, so in that case NMAP will get some data back, but the amount of data NMAP sends to the scanning port is always the same and it's zero (beside TCP handshake itself). Unless we care about external connections they can be excluded to reduce false-positive rate.
+
+## Reconnaissance: DCE/RRC SMB Share Enumeration
+`Field of Interest:`
+- sourcetype=`bro:dce_rpc:json` or `dce_rpc.log`
+- id.orig_h
+- id.resp_h
+- id.resp_p=`445`
+- endpoint
+- operation
+- _time
+
+
+```
+sourcetype="bro:dce_rpc:json" 
+| transaction endpoint
+| table _time, id.orig_h, , id.resp_h, id.resp_p, endpoint, operation
+```
+```
+sourcetype="bro:dce_rpc:json" operation=NetrShareEnum endpoint=srvsvc
+| table _time, id.orig_h, id.resp_h, endpoint, operation
+```
+`operation=NetrShareEnum`: This filter narrows down the events to those where the operation field equals `NetrShareEnum`. The `NetrShareEnum` operation is part of the Server Service (often referred to as srvsvc), which can be used to retrieve a list of shared resources on a system. Monitoring this operation is crucial because attackers could use it to gain information about network shares as a part of reconnaissance activities.
+
+## Credential Access: Golden Ticket Attack
+`Field of Interest:`
+- sourcetype=`bro:kerberos:json` or `kerberos.log`
+- client
+- error_msg
+- id.orig_h
+- id.resp_h
+- request_type=`AS`
+- _time
+
+
+
+**Kerberos Bruteforce Detection**
+```
+sourcetype="bro:kerberos:json" 
+success="false" request_type=AS
+| transaction error_msg client 
+| dedup id.orig_h id.resp_h
+| table error_msg client id.orig_h id.resp_h _time
+```
+
+```
+sourcetype="bro:kerberos:json" 
+error_msg!=KDC_ERR_PREAUTH_REQUIRED
+success="false" request_type=AS
+| bin _time span=5m
+| stats count dc(client) as "Client" values(error_msg) by _time, id.orig_h, id.resp_h
+| where count>30
+```
+
+Kerberos requests
+- AS-REQ = User presents password, gets TGT
+- TGS-REQ = User presents TGT, gets Service Ticket
+
+No. Abbreviation Function
+- 10 AS-REQ Request Ticket-Granting Ticket
+- 11 AS-REP Ticket-Granting Ticket
+- 12 TGS-REQ Request Service Ticket
+- 13 TGS-REP Service Ticket
+- 30 KRB-ERROR error
+
+[MIT Kerberos Documentation - Encryption types](https://web.mit.edu/kerberos/krb5-latest/doc/admin/enctypes.html#:~:text=Kerberos%20can%20use%20a%20variety,confidentiality%20and%20integrity%20to%20data.)
+
