@@ -816,6 +816,14 @@ index="ad_hunting" source="xmlwineventlog:security" EventCode=4662 Properties="*
 | transaction session_id
 | table session_id Properties host Computer SubjectUserName AccessMask
 ```
+- Another method for gaining domain credentials is to abuse the Directory Replication Service Remote protocol used by domain controllers for replication of data. 
+- Mimikatz includes a feature DCSync,which effectively "impersonates" a domain controller and requests account password data from a real domain controller. 
+- This rule may help to hunt it. The search focuses onevent 4662 (An operation was performed on an object). 
+- This event contains field Properties, which enables to determine the access rights used.Therefore, the search filters events based on this field to only those related to DC replication. 
+- Then, the Logon ID of the user should be taken from the results and correlated with an authentication event 4624 to see further details about the user session. 
+- Most importantly, to determine source workstation and IP address of the activity. The identified IP addresses from the correlation should be those of Domain Controllers, otherwise we are dealing with another endpoint/workstation that has been compromised by an attacker and is impersonating a Domain Controller.
+
+
 ## Reconnaissance: BruteForce Attack
 `Field of Interest:`
 
