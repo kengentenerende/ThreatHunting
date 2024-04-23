@@ -219,6 +219,603 @@ Splunk is one of the leading SIEM solutions in the market that provides the abil
 * suricata
 * winregistry
 
+## BruteForce: Logon attempts using a non-existing account (Kerberos)
+
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4768*`
+- Status=`0x6` - This value means that the submitted username does not exist.
+- TargetUserName 
+- IpAddress
+- Computer
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `IpAddress maxpause=5m maxevents=-1`
+- sort
+
+```
+index=ad_hunting EventCode=4768 Status=0x6
+| transaction IpAddress 
+| table IpAddress TargetUserName ServiceName Computer eventcount
+```
+```
+index="ad_hunting" sourcetype=XmlWinEventLog EventCode=4768 Status=0x6 
+| transaction IpAddress maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 2
+| table _time, host, Source, TargetUserName, accounts, eventcount 
+| sort - _time  
+| convert ctime(Time)
+```
+
+## BruteForce: Logon attempts using a non-existing account (NTLM)
+
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4776*`
+- Status=`0xc0000064` - This value means that the submitted username does not exist.
+- TargetUserName 
+- Workstation
+- eventcount
+- host
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `Workstation maxpause=5m maxevents=-1` 
+- sort
+
+```
+index=ad_hunting EventCode=4776 Status=0xc0000064
+| transaction TargetUserName
+| where eventcount < 10
+| table _time, host, Computer, TargetUserName, eventcount 
+| sort - eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4776 Status=0xC0000064 
+| transaction Workstation maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 2 
+| table _time, host, Workstation, TargetUserName, accounts, eventcount 
+| sort - _time 
+| convert ctime(Time)
+```
+
+## BruteForce: Excessive failed password attempts from one source (Kerberos)
+
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4771*`
+- Status=`0x18` - Invalid pre-authentication information, usually a wrong password.
+- TargetUserName 
+- Computer
+- eventcount
+- host
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `IpAddress maxpause=5m maxevents=-1` 
+- sort
+
+```
+index=* EventCode=4771 Status=0x18
+| transaction IpAddress 
+| table IpAddress TargetUserName, Computer, eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4771 Status=0x18 
+| transaction IpAddress maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
+| eval accounts=mvcount(TargetUserName) 
+| table _time, host, Source, TargetUserName, accounts, eventcount 
+| sort - _time 
+| convert ctime(Time)
+```
+
+## BruteForce: Excessive failed password attempts from one source (NTLM)
+
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4776*`
+- Status=`0xC000006A` - A logon with misspelled or wrong password.
+- TargetUserName 
+- Workstation
+- eventcount
+- host
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `Workstation maxpause=5m maxevents=-1` 
+- sort
+
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4776 Status=0xC000006A
+| transaction Workstation
+| table Workstation TargetUserName eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4776 Status=0xC000006A
+| transaction Workstation maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 2 
+| table _time, host, Workstation, TargetUserName, accounts, eventcount 
+| sort - _time 
+| convert ctime(Time)
+```
+
+## BruteForce: Excessive failed password attempts towards one account
+`Fields of Interest:`
+
+- `((EventCode=4776 Status=0xC000006A) OR (EventCode=4771 Status=0x18))`
+- Status=`0xC000006A` - A logon with misspelled or wrong password.
+- TargetUserName 
+- Status
+- src
+- host
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `TargetUserName maxpause=5m maxevents=-1` 
+- sort
+
+```
+index="ad_hunting" source=XmlWinEventLog:Security ((EventCode=4776 Status=0xC000006A) OR (EventCode=4771 Status=0x18)) 
+| transaction TargetUserName maxpause=5m maxevents=-1 
+| eval sources=mvcount(src) 
+| where sources > 1
+| table _time host TargetUserName Status src sources eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security ((EventCode=4776 Status=0xC000006A) OR (EventCode=4771 Status=0x18)) 
+| eval src=if(src=="::1", Computer, src) 
+| transaction TargetUserName maxpause=5m maxevents=-1 
+| eval sources=mvcount(src) 
+| where eventcount > 5 AND sources > 1 
+| table _time, host, TargetUserName, sources, src, eventcount 
+| sort - _time
+| convert ctime(Time)
+```
+
+## BruteForce: Multiple locked accounts from one source
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4740*`
+- TargetUserName 
+- src
+- host
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `TargetDomainName maxpause=1h maxevents=-1` 
+- sort
+
+```
+source=XmlWinEventLog:Security EventCode =4740
+| transaction TargetDomainName
+| eval accounts = mvcount (TargetUserName)
+| where accounts > 1
+| table TargetDomainName, TargetUserName, Computer, eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4740 
+| transaction TargetDomainName maxpause=1h maxevents=-1 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 1 
+| table _time, host, TargetDomainName, TargetUserName, accounts 
+| sort - _time 
+| convert ctime(Time)
+```
+## BruteForce: Logon attempts towards disabled accounts (Kerberos)
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4768*`
+- Status=`0x12` - Account is disabled.
+- TargetUserName 
+- TargetDomainName
+- src
+- host
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction `TargetDomainName maxpause=1h maxevents=-1` 
+- sort
+
+```
+source=XmlWinEventLog:Security EventCode=4768 Status=0x12
+| transaction TargetUserName 
+| table TargetUserName TargetDomainName src host eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4768 Status=0x12 
+| transaction IpAddress maxpause=5m maxevents=-1 
+| where eventcount > 5 
+| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
+| eval accounts=mvcount(TargetUserName) 
+| where accounts > 2 
+| table _time, host, Source, TargetUserName, accounts, eventcount 
+| sort - _time 
+| convert ctime(Time)
+```
+
+## Credential Access: Kerberoasting Detection (S02D01)
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4769*`
+- Status=`0x1` OR `0x3` OR `0x17` OR `0x18`
+- TargetUserName 
+- `ServiceName`
+- Computer
+- src
+- host
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+```
+index=* EventCode=4769 TicketEncryptionType=0x17
+| transaction ServiceName
+| table ServiceName TargetUserName Computer src_ip TicketEncryptionType eventcount
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4769 (TicketEncryptionType=0x1 OR TicketEncryptionType=0x3 OR TicketEncryptionType=0x17 OR TicketEncryptionType=0x18) 
+| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
+| table _time, host, Source, TargetUserName, ServiceName, TicketEncryptionType 
+| sort - _time 
+| convert ctime(Time)
+```
+- This search finds sources that requested service tickets with weak cipher suites. 
+- These encryption types should be no longer used by modern operating systems in the domain. Therefore, they are likely signs of possible Kerberoasting activity. 
+- The search looks at events 4769 auditing service ticket requests. 
+- It filters for any ticket requests with encryption type constants equal to the values of vulnerable cipher suites. 
+- All requests for tickets with these encryption types are displayed. 
+- List of all encryption types can be found at:
+  - [4768(S, F): A Kerberos authentication ticket (TGT) was requested: Table 4. Kerberos encryption types](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/auditing/event-4768#table-4-kerberos-encryption-types)
+
+## Credential Access: Excessive service ticket requests from one source (S02D02)
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4769*`
+- Status=`0x1` OR `0x3` OR `0x17` OR `0x18`
+- TargetUserName 
+- ServiceName!= `krbtgt` AND `"\$$"`
+- Computer
+- src
+- host
+- eventcount
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4769 ServiceName != krbtgt 
+| regex ServiceName != "\$$" 
+| transaction IpAddress maxpause=5m maxevents=-1 
+| eval services=mvcount(ServiceName) 
+| where services > 1 
+| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
+| table _time, host, Source, TargetUserName, services, ServiceName, TicketEncryptionType 
+| sort - _time 
+| convert ctime(Time)
+```
+Requests for several different service names (not related to each other) within a short time period from a single account are suspicious. Even more so if weak encryption was used in the service tickets. This search may help to reveal such activities. 
+Service ticket requests for krbtgt service and computer account service names (those ending with $) are filtered out from the results. 
+- The search focuses on service accounts that were created for specific services. 
+- Subsequent events are grouped on the IpAddress field by the transaction command. 
+- Number of services in each transaction is calculated to display only results where the number is higher than the one specified in the condition.
+
+## Credential Access: Suspicious external service ticket requests (S02D03)
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4769*`
+- IpPort `0 < IpPort < 1024`
+- IpAddress!=`Private IP Address`
+- TargetUserName
+- ServiceName
+- TicketEncryptionType
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+
+```
+index=* EventCode=4769 IpPort > 0 (IpPort < 1024 OR (NOT (IpAddress=10.0.0.0/8 OR IpAddress=172.16.0.0/12 OR IpAddress=192.168.0.0/16 OR IpAddress=127.0.0.1 OR IpAddress=::1))) 
+| transaction IpAddress
+| eval countIpPort=mvcount(IpPort)
+| table IpAddress TargetUserName countIpPort ServiceName TicketEncryptionType
+```
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4769 IpPort > 0 (IpPort < 1024 OR (NOT (IpAddress=10.0.0.0/8 OR IpAddress=172.16.0.0/12 OR IpAddress=192.168.0.0/16 OR IpAddress=127.0.0.1 OR IpAddress=::1))) 
+| transaction IpAddress
+| table _time, host, IpAddress, IpPort, TargetUserName, ServiceName, TicketEncryptionType 
+| sort - _time 
+| convert ctime(Time)
+```
+- This search tracks service requests by examining the IP address and port number. 
+- Unusual values indicate the use of outbound connection for the service request, which is suspicious. 
+- The search examines the IpPort and IpAddress fields in events 4769. 
+- Port values under 1024 and any non-private IP addresses are those of interest. 
+- The search displays results whenever such values appear in the request, together with details about the requestor.
+
+## Credential Access: Detecting Kerberoasting with a honeypot (S02D04)
+`Fields of Interest:`
+
+- sourcetype=`wineventlog`
+- EventCode=`*4769*`
+- TargetUserName
+- ServiceName=`*Honeypot*`
+- TicketEncryptionType
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4769 ServiceName=Honeypot01 
+| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
+| table _time, host, Source, TargetUserName, ServiceName, TicketEncryptionType
+| sort - _time 
+| convert ctime(Time)
+```
+- This search uses a detection method for Kerberoasting based on a honeypot. 
+- Honeypot is a fake service account that is never really used in the environment, but it is set up to look like a legitimate service account with high privileges assigned. 
+- A service ticket requests for this account are only made by an adversary and will be revealed by this search. 
+- The search filters all events auditing service requests (4769) for ServiceName equal to the honeypot service account (Honeypot01). 
+- The search directly produces results that detect malicious TGS requests.
+
+## Credential Access: Detecting Kerberoasting via PowerShell (S02D05)
+
+```
+index="ad_hunting" source="WinEventLog:Microsoft-Windows-PowerShell/Operational" (EventCode=4103 OR EventCode=4104) 
+| transaction Computer maxpause=15m maxevents=-1 
+| eval raw=_raw 
+| search [| inputlookup service_accounts.csv 
+| eval raw="*" . account . "*" 
+| fields raw] 
+| where eventcount > 2 
+| table _time, Computer, eventcount 
+| sort - _time 
+| convert ctime(Time)
+```
+
+## Credential Access: Possible dump of lsass.exe (Sysmon events) (S03D01)
+`Fields of Interest:`
+
+- sourcetype=`xmlwineventlog:microsoft-windows-sysmon/operational`
+- EventCode=`8` OR `10`
+- host
+- SourceImage
+- SourceProcessId
+- GrantedAccess 
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+```
+index="ad_hunting" source="xmlwineventlog:microsoft-windows-sysmon/operational" EventCode=8 OR EventCode=10 NOT GrantedAccess=0x1400 NOT GrantedAccess=0x1000 NOT GrantedAccess=0x100000 
+| where (TargetImage LIKE "%lsass.exe") 
+|search NOT SourceImage="C:\\Windows\\system32\\wininit.exe" NOT SourceImage="C:\\Windows\\system32\\csrss.exe" 
+| transaction host, SourceImage, SourceProcessId maxspan=15m 
+| table _time, host, SourceImage, SourceProcessId, GrantedAccess 
+| sort - _time 
+| convert ctime(Time)
+```
+This search detects possible dump of the LSASS process (lsass.exe) memory via Sysmon events. The process memory contains various credentials while the OS is running.
+- To create a dump of the lsass.exe process Administrator or SYSTEM privileges are required, especially SeDebugPrivilege or SeTcbPrivilege.
+- These are the primary detection artifacts used in this search. It is essential to focus on processes that accessed lsass.exe with these privileges. 
+- The search is focusing on Sysmon events with event codes 10 (ProcessAccess) and 8 (CreateRemoteThread). 
+- These events are logged when a process creates another process or thread. The search focuses on processes interacting with lsass.exe with access mask specifying higher privileges. This is achieved by whitelisting the low-privileged access masks. List of access masks can be found at. 
+- It is possible to whitelist some processes that commonly access lsass.exe, such as wininit.exe. However, it is strongly recommended to specify the full path to the process, as the name and the location of the executable can be easily changed to look like a legitimate process. The transaction command is used to group accesses of the same process in a short period. Process name and ID are displayed for further investigation.
+- [LSASS Memory Read Access](https://threathunterplaybook.com/hunts/windows/170105-LSASSMemoryReadAccess/notebook.html?highlight=lsass%20dump)
+
+## Credential Access: Possible dump of lsass.exe (Windows events) (S03D02)
+`Fields of Interest:`
+
+- sourcetype=`XmlWinEventLog:Security`
+- EventCode=`4656`
+- host
+- ProcessName
+- ProcessId
+- AccessMask
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=4656 NOT AccessMask=0x1400 NOT AccessMask=0x1000 NOT AccessMask=0x100000 
+| where (ObjectName LIKE "%lsass.exe") 
+| search NOT ProcessName="C:\\Windows\\system32\\lsass.exe" 
+| transaction host, ProcessName, ProcessId maxspan=15m 
+| table _time, host, ProcessName, ProcessId, AccessMask 
+| sort - _time 
+| convert ctime(Time)
+```
+## Credential Access: Creation of a dump file (S03D03)
+`Fields of Interest:`
+
+- sourcetype=`xmlwineventlog:microsoft-windows-sysmon/operational`
+- EventCode=`11`
+- host
+- Image
+- ProcessId
+- TargetFilename
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+```
+index="ad_hunting" source="xmlwineventlog:microsoft-windows-sysmon/operational" EventCode=11 TargetFilename=*dmp 
+| table _time, host, Image, ProcessId, TargetFilename 
+| sort - _time 
+| convert ctime(Time)
+```
+- A dump file may be created by using many different tools. Even the Task Manager utility integrated into Windows has this capability. 
+- Some programs will create a file with .dmp extension by default or would not allow changing the filename at all. This search hunts for the creation of such files. 
+- Sysmon event 11 allows monitoring creation of files together with the process that created them. It is enough to look for a filename ending with dmp and display related information for investigation.
+- Dumps created by Task Manager and ProcDump were saved to a file. Both tools assigned the .dmp file extension by default
+
+## Credential Access: Installation of an unsigned driver (S03D04)
+`Fields of Interest:`
+
+- sourcetype=`xmlwineventlog:microsoft-windows-sysmon/operational`
+- EventCode=`6`
+- Signed=`false`
+- host
+- ImageLoaded
+- SHA1
+- SignatureStatus
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+```
+index="ad_hunting" source="xmlwineventlog:microsoft-windows-sysmon/operational" EventCode=6 Signed=false 
+| table _time, host, ImageLoaded, Hashes, SignatureStatus 
+| sort - _time 
+| convert ctime(Time)
+```
+Some tools used for credential dumping, such as Mimikatz, may attempt to install its own driver to the system. This search aims to detect such attempts by looking at the driver signature. It may also reveal suspicious installations of other drivers to the system beyond the scope of this story. Such events happening on critical systems are surely worth of investigation. 
+- The search looks for Sysmon event 6 (Driver loaded) with the value of field Signed equal to false. 
+- By this, loading of unsigned drivers on the monitored systems can be spotted. 
+- Filename with path and hashes can be then used for investigation. 
+Correlation search S03C04 can be used to gain more information.
+
+## Credential Access: Access to GPP honeypot in SYSVOL (S03D05)
+`Fields of Interest:`
+
+- sourcetype=`XmlWinEventLog:Security`
+- EventCode=`5145`
+- RelativeTargetName=`"*test.local\\Policies\\{12345}*"`
+- host
+- IpAddress
+- SubjectUserName
+- SubjectUserSid
+- SubjectLogonId
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+```
+index="ad_hunting" source=XmlWinEventLog:Security EventCode=5145 RelativeTargetName="*test.local\\Policies\\{12345}*" 
+| transaction IpAddress, SubjectUserSid maxspan=5m maxevents=-1 
+| table _time, host, IpAddress, SubjectUserName, SubjectUserSid, SubjectLogonId 
+| sort - _time 
+| convert ctime(Time)
+```
+Group Policy Preferences can be used to distribute passwords across the domain. GPP data is stored in a domain-wide share SYSVOL, to which all Authenticated Users have read access. 
+- Therefore, SYSVOL is a common place for attackers to look for credentials. 
+- Such attempts can be detected by creating a honeypot (fake group policy with no effective settings) and logging accesses to it. Any access to this file is suspicious, as there are no reasons to access it. 
+- Windows event 5145 (A network share object was checked to see whether client can be granted desired access) will provide the desired information. 
+- The search filters these events to the honeypot policy file (field RelativeTargetName) and displays information about the origin of the action. The transaction command is used to group multiple events from the same source in a short time to a single one.
+
+
+## Credential Access: Possible credential database dumping - NTDS.dit (S03D06)
+`Fields of Interest:`
+
+- sourcetype=`XmlWinEventLog:Security`
+- EventCode=`4688`
+- NewProcessName=`"*vssadmin.exe"`
+- host
+- Computer
+- ParentProcessName
+- NewProcessName
+- TargetUserName
+
+
+```
+index="ad_hunting" source="xmlwineventlog:security" EventCode=4688 NewProcessName="*vssadmin.exe"
+| table _time host Computer ParentProcessName NewProcessName TargetUserName
+```
+
+- NTDS.dit is the Active Directory database file, an obvious choice for attackers. There are many methods on how to gain access to this file. One of them is to create Volume Shadow Copy of a domain controller. 
+- It can be done either by a utility vssadmin.exe or using WMI . WMI can be invoked from PowerShell or by wmic.exe. 
+- Another method is to used ntdsutil.exe - a utility used to build a new domain controller faster. 
+- Attackers may also use reg.exe to dump hives directly from Registry, where the SAM database is located. 
+- The rule detects usage of these methods by looking at command line parameters of newly created processes. 
+- The search takes events logging creation of new processes: Windows event 4688 (Sysmon event 1 is better) and filter for known binaries that can access NTDS.dit such as vssadmin.exe.
+
+## Credential Access: Possible dumping via DC synchronization (S03D07)
+`Fields of Interest:`
+
+- sourcetype=`XmlWinEventLog:Security`
+- EventCode=`4662`
+- Properties=
+  - DS-Replication-Get-Change
+    - GUID: `1131f6aa-9c07-11d1-f79f-00c04fc2dcd2`
+  - DS-Replication-Get-Changes-All
+    - GUID: `1131f6ad-9c07-11d1-f79f-00c04fc2dcd2`
+  - DS-Replication-Synchronize
+    - GUID: `1131f6ab-9c07-11d1-f79f-00c04fc2dcd2`
+- host
+- Computer
+- SubjectUserName
+- AccessMask
+- Properties
+- session_id
+
+`SPL of Interest:`
+- eval
+- table
+- transaction 
+- sort
+
+```
+index="ad_hunting" source="xmlwineventlog:security" EventCode=4662 Properties="*1131f6aa-9c07-11d1-f79f-00c04fc2dcd2*" OR Properties="*1131f6ad-9c07-11d1-f79f-00c04fc2dcd2*" OR Properties="*1131f6ab-9c07-11d1-f79f-00c04fc2dcd2*" Caller_User_Name=Administrator
+| transaction session_id
+| table session_id Properties host Computer SubjectUserName AccessMask
+```
 ## Reconnaissance: BruteForce Attack
 `Field of Interest:`
 
@@ -497,247 +1094,6 @@ index="botsv2" ((Logon_ID=0x171491a OR LogonId=0x171491a) host=*TARGET_HOST*)
 index="botsv2" sourcetype="xmlwineventlog:microsoft-windows-sysmon/operational"  ParentCommandLine="C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding"
 | eval shortCL=substr(CommandLine,1,100)
 | table _time user host ProcessId ParentProcessId shortCL ParentCommandLine
-```
-
-## BruteForce: Logon attempts using a non-existing account (Kerberos)
-
-`Fields of Interest:`
-
-- sourcetype=`wineventlog`
-- EventCode=`*4768*`
-- Status=`0x6` - This value means that the submitted username does not exist.
-- TargetUserName 
-- IpAddress
-- Computer
-- eventcount
-
-`SPL of Interest:`
-- eval
-- table
-- transaction `IpAddress maxpause=5m maxevents=-1`
-- sort
-
-```
-index=ad_hunting EventCode=4768 Status=0x6
-| transaction IpAddress 
-| table IpAddress TargetUserName ServiceName Computer eventcount
-```
-```
-index="ad_hunting" sourcetype=XmlWinEventLog EventCode=4768 Status=0x6 
-| transaction IpAddress maxpause=5m maxevents=-1 
-| where eventcount > 5 
-| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
-| eval accounts=mvcount(TargetUserName) 
-| where accounts > 2
-| table _time, host, Source, TargetUserName, accounts, eventcount 
-| sort - _time  
-| convert ctime(Time)
-```
-
-## BruteForce: Logon attempts using a non-existing account (NTLM)
-
-`Fields of Interest:`
-
-- sourcetype=`wineventlog`
-- EventCode=`*4776*`
-- Status=`0xc0000064` - This value means that the submitted username does not exist.
-- TargetUserName 
-- Workstation
-- eventcount
-- host
-
-`SPL of Interest:`
-- eval
-- table
-- transaction `Workstation maxpause=5m maxevents=-1` 
-- sort
-
-```
-index=ad_hunting EventCode=4776 Status=0xc0000064
-| transaction TargetUserName
-| where eventcount < 10
-| table _time, host, Computer, TargetUserName, eventcount 
-| sort - eventcount
-```
-```
-index="ad_hunting" source=XmlWinEventLog:Security EventCode=4776 Status=0xC0000064 
-| transaction Workstation maxpause=5m maxevents=-1 
-| where eventcount > 5 
-| eval accounts=mvcount(TargetUserName) 
-| where accounts > 2 
-| table _time, host, Workstation, TargetUserName, accounts, eventcount 
-| sort - _time 
-| convert ctime(Time)
-```
-
-## BruteForce: Excessive failed password attempts from one source (Kerberos)
-
-`Fields of Interest:`
-
-- sourcetype=`wineventlog`
-- EventCode=`*4771*`
-- Status=`0x18` - Invalid pre-authentication information, usually a wrong password.
-- TargetUserName 
-- Computer
-- eventcount
-- host
-
-`SPL of Interest:`
-- eval
-- table
-- transaction `IpAddress maxpause=5m maxevents=-1` 
-- sort
-
-```
-index=* EventCode=4771 Status=0x18
-| transaction IpAddress 
-| table IpAddress TargetUserName, Computer, eventcount
-```
-```
-index="ad_hunting" source=XmlWinEventLog:Security EventCode=4771 Status=0x18 
-| transaction IpAddress maxpause=5m maxevents=-1 
-| where eventcount > 5 
-| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
-| eval accounts=mvcount(TargetUserName) 
-| table _time, host, Source, TargetUserName, accounts, eventcount 
-| sort - _time 
-| convert ctime(Time)
-```
-
-## BruteForce: Excessive failed password attempts from one source (NTLM)
-
-`Fields of Interest:`
-
-- sourcetype=`wineventlog`
-- EventCode=`*4776*`
-- Status=`0xC000006A` - A logon with misspelled or wrong password.
-- TargetUserName 
-- Workstation
-- eventcount
-- host
-
-`SPL of Interest:`
-- eval
-- table
-- transaction `Workstation maxpause=5m maxevents=-1` 
-- sort
-
-```
-index="ad_hunting" source=XmlWinEventLog:Security EventCode=4776 Status=0xC000006A
-| transaction Workstation
-| table Workstation TargetUserName eventcount
-```
-```
-index="ad_hunting" source=XmlWinEventLog:Security EventCode=4776 Status=0xC000006A
-| transaction Workstation maxpause=5m maxevents=-1 
-| where eventcount > 5 
-| eval accounts=mvcount(TargetUserName) 
-| where accounts > 2 
-| table _time, host, Workstation, TargetUserName, accounts, eventcount 
-| sort - _time 
-| convert ctime(Time)
-```
-
-## BruteForce: Excessive failed password attempts towards one account
-`Fields of Interest:`
-
-- `((EventCode=4776 Status=0xC000006A) OR (EventCode=4771 Status=0x18))`
-- Status=`0xC000006A` - A logon with misspelled or wrong password.
-- TargetUserName 
-- Status
-- src
-- host
-- eventcount
-
-`SPL of Interest:`
-- eval
-- table
-- transaction `TargetUserName maxpause=5m maxevents=-1` 
-- sort
-
-```
-index="ad_hunting" source=XmlWinEventLog:Security ((EventCode=4776 Status=0xC000006A) OR (EventCode=4771 Status=0x18)) 
-| transaction TargetUserName maxpause=5m maxevents=-1 
-| eval sources=mvcount(src) 
-| where sources > 1
-| table _time host TargetUserName Status src sources eventcount
-```
-```
-index="ad_hunting" source=XmlWinEventLog:Security ((EventCode=4776 Status=0xC000006A) OR (EventCode=4771 Status=0x18)) 
-| eval src=if(src=="::1", Computer, src) 
-| transaction TargetUserName maxpause=5m maxevents=-1 
-| eval sources=mvcount(src) 
-| where eventcount > 5 AND sources > 1 
-| table _time, host, TargetUserName, sources, src, eventcount 
-| sort - _time
-| convert ctime(Time)
-```
-
-## BruteForce: Multiple locked accounts from one source
-`Fields of Interest:`
-
-- sourcetype=`wineventlog`
-- EventCode=`*4740*`
-- TargetUserName 
-- src
-- host
-- eventcount
-
-`SPL of Interest:`
-- eval
-- table
-- transaction `TargetDomainName maxpause=1h maxevents=-1` 
-- sort
-
-```
-source=XmlWinEventLog:Security EventCode =4740
-| transaction TargetDomainName
-| eval accounts = mvcount (TargetUserName)
-| where accounts > 1
-| table TargetDomainName, TargetUserName, Computer, eventcount
-```
-```
-index="ad_hunting" source=XmlWinEventLog:Security EventCode=4740 
-| transaction TargetDomainName maxpause=1h maxevents=-1 
-| eval accounts=mvcount(TargetUserName) 
-| where accounts > 1 
-| table _time, host, TargetDomainName, TargetUserName, accounts 
-| sort - _time 
-| convert ctime(Time)
-```
-## BruteForce: Logon attempts towards disabled accounts (Kerberos)
-`Fields of Interest:`
-
-- sourcetype=`wineventlog`
-- EventCode=`*4768*`
-- Status=`0x12` - Account is disabled.
-- TargetUserName 
-- TargetDomainName
-- src
-- host
-- eventcount
-
-`SPL of Interest:`
-- eval
-- table
-- transaction `TargetDomainName maxpause=1h maxevents=-1` 
-- sort
-
-```
-source=XmlWinEventLog:Security EventCode=4768 Status=0x12
-| transaction TargetUserName 
-| table TargetUserName TargetDomainName src host eventcount
-```
-```
-index="ad_hunting" source=XmlWinEventLog:Security EventCode=4768 Status=0x12 
-| transaction IpAddress maxpause=5m maxevents=-1 
-| where eventcount > 5 
-| eval Source=if(IpAddress=="::1", Computer, IpAddress) 
-| eval accounts=mvcount(TargetUserName) 
-| where accounts > 2 
-| table _time, host, Source, TargetUserName, accounts, eventcount 
-| sort - _time 
-| convert ctime(Time)
 ```
 
 ## Persistence: Short Time Scheduled Tasks (Process)
