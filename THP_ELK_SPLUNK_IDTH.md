@@ -823,6 +823,262 @@ index="ad_hunting" source="xmlwineventlog:security" EventCode=4662 Properties="*
 - Then, the `Logon ID`/`Session ID` of the user should be taken from the results and correlated with an authentication event 4624 to see further details about the user session. 
 - Most importantly, to determine source workstation and IP address of the activity. The identified IP addresses from the correlation should be those of Domain Controllers, otherwise we are dealing with another endpoint/workstation that has been compromised by an attacker and is impersonating a Domain Controller.
 
+## Persistence: Windows Management Instrumentation (WMI) Event Subscription (T1546.003)
+`Fields of Interest:`
+
+- sourcetype=`winsysmon`
+- EventCode=`19` OR `20` OR `21`
+- EventDescription
+- Operation
+- Computer
+- `21` Consumer
+- `19` Query
+- `20` Destination
+
+```
+index=winsysmon EventCode=19 OR EventCode=20 OR EventCode=21 
+| table _time, EventCode, EventDescription, Operation, Computer, Consumer, Query, Destination
+```
+[Sigma - WMI Event Subscription](https://github.com/SigmaHQ/sigma/blob/e1a713d264ac072bb76b5c4e5f41315a015d3f41/rules/windows/wmi_event/sysmon_wmi_event_subscription.yml)
+
+## Persistence: Boot or Logon Initialization Scripts (T1037)
+`Fields of Interest:`
+
+- sourcetype=`winsysmon`
+- EventCode=`11` OR `12` OR `13` OR `14`
+- TargetObject=`"*UserInitMprLogonScript*"`
+- Operation
+- Computer
+- Details
+
+
+[https://github.com/SigmaHQ/sigma/blob/e1a713d264ac072bb76b5c4e5f41315a015d3f41/rules/windows/process_creation/proc_creation_win_userinit_uncommon_child_processes.yml#L27](https://github.com/SigmaHQ/sigma/blob/e1a713d264ac072bb76b5c4e5f41315a015d3f41/rules/windows/process_creation/proc_creation_win_userinit_uncommon_child_processes.yml#L27)
+```
+index=winsysmon ((ParentImage="*\\userinit.exe" NOT (Image="*\\explorer.exe")) NOT ((CommandLine="*\\netlogon.bat" OR CommandLine="*\\UsrLogon.cmd"))) 
+| stats values(cmdline) dc(Computer) AS hosts count by ParentImage Image
+```
+- [https://github.com/Elemental-attack/Elemental/blob/aad0973d0182082003785109aa63eaeb4ac27856/elemental/media/sigma_rules/sysmon_logon_scripts_userinitmprlogonscript.yml#L4](https://github.com/Elemental-attack/Elemental/blob/aad0973d0182082003785109aa63eaeb4ac27856/elemental/media/sigma_rules/sysmon_logon_scripts_userinitmprlogonscript.yml#L4)
+- Sysmon Event IDs (related to registry activity) 11, 12, 13 and 14 can be monitored if they had captured any activity towards the key UserInitMprLogonScripts.
+```
+index=winsysmon ((EventCode="11" OR EventCode="12" OR EventCode="13" OR EventCode="14") AND TargetObject="*UserInitMprLogonScript*") 
+| table Computer, EventCode, signature, TargetObject, Details
+```
+- [Beyond good ol’ Run key, Part 18](https://www.hexacorn.com/blog/2014/11/14/beyond-good-ol-run-key-part-18/)
+
+## Defense Evasion: Hunt for Renamed PowerShell - Masquerading (T1036)
+`Fields of Interest:`
+
+- sourcetype=`winsysmon`
+- EventCode=`1`
+- Description=`"*Windows PowerShell*"`
+- Computer
+- User
+- Image=`"*\\powershell.exe"` OR `"*\\powershell_ise.exe"`
+- cmdline
+- ParentImage
+- Hashes
+
+
+```
+index=winsysmon EventCode=1 AND Description="Windows PowerShell" AND (Image!="*\\powershell.exe" AND Image!="*\\powershell_ise.exe") 
+| rex field=Hashes ".*MD5=(?<MD5>[A-F0-9]*)," 
+| table _time, Computer, User, Image, cmdline, ParentImage, MD5
+```
+```
+index=winsysmon EventCode=1 AND Description="Windows PowerShell" 
+| rex field=Hashes ".*MD5=(?<MD5>[A-F0-9]*)," 
+| stats dc(Computer) AS Hostname count by Image MD5 Description
+| sort -count
+```
+- [https://github.com/SigmaHQ/sigma/blob/e1a713d264ac072bb76b5c4e5f41315a015d3f41/deprecated/windows/proc_creation_win_renamed_powershell.yml#L1](https://github.com/SigmaHQ/sigma/blob/e1a713d264ac072bb76b5c4e5f41315a015d3f41/deprecated/windows/proc_creation_win_renamed_powershell.yml#L1)
+
+## Execution: Hunt for PowerShell Empire
+`Fields of Interest:`
+
+- sourcetype=`WinEventLog:Microsoft-Windows-PowerShell/Operational`
+- EventCode=`4104`
+- _time
+- Computer
+- Sid
+- Message
+
+```
+index=* EventCode=4104 AND ($psversiontable.psversion.major OR system.management.automation.utils OR system.management.automation.amsiutils) 
+| eval MessageDeobfuscated = replace(Message, "[ `'+\"\^]","") 
+| search EnableScriptBlockLogging OR enablescriptblockinvocationlogging OR cachedgrouppolicysettings OR ServerCertificateValidationCallback OR expect100continue 
+| table _time ComputerName Sid MessageDeobfuscated
+```
+PowerShell Empire is using PowerShell on victim machines to run malicious activity. Since we have PowerShell logs available to us (Script-Block logging), we can use that to detect any malicious usage. Tom Ueltschi (renowned security researcher) proposed a detection rule that looks for any of the following 3 strings:
+
+- $psversiontable.psversion.major
+- system.management.automation.utils
+- system.management.automation.amsiutils
+
+Then, perform simple deobfuscation on the captured command and look for the occurrence of any of the following 5 strings:
+
+- EnableScriptBlockLogging
+- Enablescriptblockinvocationlogging
+- cachedgrouppolicysettings
+- ServerCertificateValidationCallback
+- expect100continue
+
+## Execution: Hunt for Unmanaged PowerShell
+`Fields of Interest:`
+
+- sourcetype=`WinEventLog:Windows PowerShell`
+- EventCode=`4104`
+- host
+- Message=`HostApplication=`
+- EventCode
+
+```
+index=* hostapplication 
+| rex field=Message ".*HostApplication=(?<HostApplication>.*)" 
+| search HostApplication!="*powershell*" HostApplication!="*\\sdiagnhost.exe*" 
+| stats count by host HostApplication sourcetype EventCode
+```
+- Unmanaged PowerShell can be detected by looking at the Host Application when PowerShell starts and filtering the "known goods" such as PowerShell.exe
+
+## Execution: Hunt for PowerShell Base64 encoded commands
+`Fields of Interest:`
+
+- sourcetype=`WinEventLog:Microsoft-Windows-Sysmon/Operational`
+- EventCode=`1`
+- Computer
+- User
+- ParentImage
+- ParentCommandLine
+- Image
+- CommandLine=`"* -enc*"` OR `"* -en *"` OR `"* -e *"` OR `"* -ec *"`
+
+```
+index=* EventCode=1 
+| eval cmdline =replace(cmdline, "-[Ee][Nn][Cc][Oo][Dd][Ii][Nn][Gg]", "__encoding") 
+| search Image="*\\powershell.exe" (cmdline="* -enc*" OR cmdline="* -en *" OR cmdline="* -e *" OR cmdline="* -ec *") 
+| transaction ParentImage
+| table _time Computer User ParentImage ParentCommandLine Image CommandLine
+```
+```
+index=* EventCode=1 
+| eval cmdline =replace(cmdline, "-[Ee][Nn][Cc][Oo][Dd][Ii][Nn][Gg]", "__encoding") 
+| search Image="*\\powershell.exe" (cmdline="* -enc*" OR cmdline="* -en *" OR cmdline="* -e *" OR cmdline="* -ec *") 
+| table _time Computer User cmdline
+```
+## Lateral Movement: Remote Services: SMB/Windows Admin Shares (T1021.002)
+`Fields of Interest:`
+
+- sourcetype=`WinEventLog:Microsoft-Windows-Sysmon/Operational`
+- EventCode=`1`
+- User
+- Computer
+- ParentImage=`\\\\127.0.0.1\\ADMIN$\\*.exe`
+- Image=`*\\rundll32.exe`
+
+```
+index="winsysmon" EventCode=1 ParentImage=\\\\127.0.0.1\\ADMIN$\\*.exe AND Image=*\\rundll32.exe 
+| table _time Computer User ParentImage Image
+```
+- After researching through the provided technique and some of the references, the shares that we are interested in are C$, ADMIN$, and IPC$. 
+- Common tools that abuse these shares is some of PSExec's implementations - such as the one in Cobalt Strike. 
+- A distinctive characteristic is the connection back to the ADMIN$ share on localhost at 127.0.0.1 to execute a binary file which runs rundll32.exe. 
+
+## Execution: Hunt for Download of Word Documents
+```
+index="winsysmon" EventCode=15 TargetFilename="*.doc.*" 
+| table _time Computer Image TargetFilename MD5
+```
+## Execution: Hunt for Malicious Word document (T1059)
+```
+index="winsysmon" EventCode=1 ParentImage=*\\winword.exe 
+| table _time Computer User Image ParentImage ParentCommandLine
+```
+
+## Persistence: Boot or Logon Autostart Execution: Registry Run Keys (T1547.001)
+`Fields of Interest:`
+
+- sourcetype=`WinEventLog:Microsoft-Windows-Sysmon/Operational`
+- EventCode=`13`
+- User
+- Computer
+- TargetObject
+- Details
+- Image
+- EventDescription
+
+```
+index="winsysmon" EventCode=13 "*\\Windows\\CurrentVersion\\Run*" 
+| transaction Image
+| table Image TargetObject Details
+```
+```
+index="winsysmon" EventCode=13 "*\\Windows\\CurrentVersion\\Run*" 
+| rex field=Image ".*\\\\(?<Image_EXE>[^\\\\]*)" 
+| rex field=TargetObject ".*\\\\CurrentVersion\\\\(?<TargetObj_PATH>.*)" 
+| strcat "Image=\"" Image_EXE "\", TargetObject=\"" TargetObj_PATH "\", Details=\"" Details "\"" Image_TargetObj_Details 
+| stats dc(Computer) AS Clients values(Image_TargetObj_Details) count by EventDescription Image_EXE
+```
+After reviewing the MITRE documentation, our hunt will focus on Sysmon Event ID 13, and focus on activity associated with the registry path "\Windows\CurrentVersion\Run". 
+
+## Persistence: Boot or Logon Autostart Execution: Startup Folder (T1547.001)
+`Fields of Interest:`
+
+- sourcetype=`WinEventLog:Microsoft-Windows-Sysmon/Operational`
+- EventCode=`1`
+- User
+- Computer
+- Image=`"*\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\*"`
+- CommandLine=`"*\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\*"`
+- MD5
+
+```
+index="winsysmon" EventCode=1 Image="*\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\*" OR CommandLine="*\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\*" 
+| table _time Computer User Image CommandLine MD5
+```
+## Execution: Hunt for Suspicious VBS scripts
+`Fields of Interest:`
+
+- sourcetype=`WinEventLog:Microsoft-Windows-Sysmon/Operational`
+- EventCode=`1`
+- User
+- Computer
+- ProcessId
+- ParentImage
+- ParentCommandLine
+- Image=`"*\\cscript.exe"` OR `"*\\wscript.exe"`
+- CommandLine
+
+```
+index="winsysmon" EventCode=1 Image="*\\cscript.exe" OR Image="*\\wscript.exe" 
+| rex field=Image ".*\\\\(?<Image_fn>[^\\\\]*)" 
+| rex field=ParentImage ".*\\\\(?<ParentImage_fn>[^\\\\]*)" 
+| stats count by Computer User ProcessId Image CommandLine ParentImage ParentCommandLine
+```
+
+## Reconnaissance: Internal Recon (T1547.001)
+`Fields of Interest:`
+
+- sourcetype=`WinEventLog:Microsoft-Windows-Sysmon/Operational`
+- EventCode=`1`
+- User
+- Computer
+- ParentImage
+- ParentCommandLine
+- Image
+- CommandLine
+
+```
+index="winsysmon" EventCode=1 Image=*\\ipconfig.exe OR Image=*\\net.exe OR Image=*\\whoami.exe OR Image=*\\netstat.exe OR Image=*\\nbtstat.exe OR Image=*\\hostname.exe OR Image=*\\tasklist.exe 
+| transaction ParentImage
+| table ParentImage ParentCommandLine Image CommandLine _time Computer User
+```
+```
+index="winsysmon" EventCode=1 Image=*\\ipconfig.exe OR Image=*\\net.exe OR Image=*\\whoami.exe OR Image=*\\netstat.exe OR Image=*\\nbtstat.exe OR Image=*\\hostname.exe OR Image=*\\tasklist.exe 
+| bin _time span=15m 
+| stats dc(Image) AS CNT_CMDS values(CommandLine) values(ParentCommandLine) count by _time Computer User 
+| where CNT_CMDS > 2
+```
+[CAR-2013-04-002: Quick execution of a series of suspicious commands](https://car.mitre.org/analytics/CAR-2013-04-002/)
+
 
 ## Reconnaissance: BruteForce Attack
 `Field of Interest:`
