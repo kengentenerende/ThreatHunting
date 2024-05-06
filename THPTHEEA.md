@@ -428,6 +428,17 @@ It could be interesting to compare the result of pslist with the one of psscan t
 > volatility --profile=PROFILE psxview -f file.dmp # Get hidden process list
 
 > volatility --profile=PROFILE dlllist -f file.dmp # Get loaded dll list
+
+### Files scan
+
+```
+python2 vol.py -f zeus.vmem —profile WinXPSP2x86 filescan
+```
+### Dump files
+
+```
+python2 vol.py -f zeus.vmem —profile WinXPSP2x86 dumpfiles -Q 0x00000000029d9b40 -D filedump/
+```
 ### Dump proc
 
 > volatility --profile=Win7SP1x86_23418 procdump --pid=3152 -n --dump-dir=. -f file.dmp
