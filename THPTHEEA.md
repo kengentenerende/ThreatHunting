@@ -401,6 +401,19 @@ Known bad heuristics and signatures (e.g. YARA signatures).
 
 ## Volatility
 
+### Discover Profile
+
+```
+volatility imageinfo -f file.dmp
+volatility kdbgscan -f file.dmp
+```
+
+### OS Information
+
+```
+#vol3 has a plugin to give OS information (note that imageinfo from vol2 will give you OS info)
+./vol.py -f file.dmp windows.info.Info
+```
 ### Processes and DLLs 
 List processes
 Try to find suspicious processes (by name) or unexpected child processes (for example a cmd.exe as a child of iexplorer.exe).
