@@ -2,7 +2,52 @@
 
 **Useful Links**
 [The ThreatHunting Project](https://github.com/ThreatHuntingProject/ThreatHunting/tree/master/hunts)
+# Yara Template
 
+```
+/*
+   Yara Rule Set
+   Author: YarGen Rule Generator
+   Date: 2017-12-05
+   Identifier: hidden-tear
+*/
+
+/* Rule Set ----------------------------------------------------------------- */
+
+rule END_OF_YEAR_FINANCIALS_REPORT {
+   meta:
+      description = "Auto-generated rule - file END OF YEAR FINANCIALS REPORT.exe"
+      author = "YarGen Rule Generator"
+      reference = "not set"
+      date = "2017-12-05"
+      hash1 = "3741e642c0c428ab598961ea002810f1a073240786476dde57415abd9a4fb04f"
+   strings:
+      $x1 = "C:\\Users\\johndoe\\Desktop\\Hidden-tear-2.0-master\\Hidden-tear-2.0-master\\hidden-tear\\hidden-tear\\obj\\Release\\hidden-tear" ascii
+      $s2 = "C:\\Users\\" fullword wide
+      $s3 = "https://172.16.151.199/hiddentear/write.php?info=" fullword wide
+      $s4 = "hidden-tear.exe" fullword wide
+      $s5 = "\\Desktop\\blah\\READ_IT.txt" fullword wide
+      $s6 = "On second thought stay encrypted!" fullword wide
+      $s7 = "CreatePassword" fullword ascii
+      $s8 = "SendPassword" fullword ascii
+      $s9 = "Files have been encrypted" fullword wide
+      $s10 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890*!=&?&/" fullword wide
+      $s11 = "bytesToBeEncrypted" fullword ascii
+      $s12 = "encryptDirectory" fullword ascii
+      $s13 = "DD5783BCF1E9002BC00AD5B83A95ED6E4EBB4AD5" fullword ascii
+      $s14 = "allyourbasearebelongtous" fullword wide
+      $s15 = "hidden_tear.Properties.Resources.resources" fullword ascii
+      $s16 = "hidden_tear.Properties.Resources" fullword wide
+      $s17 = "$7ab0dd04-43e0-4d89-be59-60a30b766467" fullword ascii
+      $s18 = "userDir" fullword ascii
+      $s19 = "hidden_tear.Form1.resources" fullword ascii
+      $s20 = "hidden tear" fullword wide
+   condition:
+      ( uint16(0) == 0x5a4d and filesize < 600KB and ( 1 of ($x*) and 5 of ($s*) ) ) or ( all of them )
+}
+
+/* Super Rules ------------------------------------------------------------- */
+```
 # Network Traffic Hunting
 
 ## Hunting Tools
